@@ -45,7 +45,61 @@ class Viewer {
   void DisplayError();
   void Display(cv::Mat image);
   bool isVisible();
-  bool on_clicked(GdkEventButton * event);
+  bool OnClickedEventBox(GdkEventButton* event);
+
+
+ private:
+
+  Glib::RefPtr<Gnome::Glade::Xml> ref_xml_;
+
+  Gtk::Image* gtk_image_in_;  // input image
+  Gtk::Image* gtk_image_out_;  // output image
+  Gtk::Window* main_window_;
+  Gtk::Main gtk_main_;
+
+  //IplImage* imagenO;
+  cv::Mat imagenO_;
+  pthread_mutex_t mutex_;
+
+  // Horizontal slidebars
+  Gtk::HScale* scale_sobel_;
+  Gtk::HScale* scale_canny_;
+  Gtk::HScale* scale_hough_threshold_;
+  Gtk::HScale* scale_hough_long_;
+  Gtk::HScale* scale_hough_gap_;
+
+  // Vertical slidebars
+  Gtk::VScale* scale_h_max_;
+  Gtk::VScale* scale_h_min_;
+  Gtk::VScale* scale_v_max_;
+  Gtk::VScale* scale_v_min_;
+  Gtk::VScale* scale_s_max_;
+  Gtk::VScale* scale_s_min_;
+
+  Gtk::EventBox* eventbox_;
+
+  // Check buttons that implement the filters
+  Gtk::CheckButton* button_canny_;
+  Gtk::CheckButton* button_sobel_;
+  Gtk::CheckButton* button_laplace_;
+  Gtk::CheckButton* button_hough_;
+  Gtk::CheckButton* button_harris_;
+  Gtk::CheckButton* button_default_;
+  Gtk::CheckButton* button_gray_;
+  Gtk::CheckButton* button_flow_;
+  Gtk::CheckButton* button_conv_;
+  Gtk::CheckButton* button_pyramid_;
+  Gtk::CheckButton* button_color_;
+  Gtk::CheckButton* button_houghcircles_;
+
+  // Selection of Method
+  Gtk::ComboBox* combobox_hough_;
+  Gtk::ComboBox* combobox_conv_;
+
+  // Labels
+  Gtk::Label* label_long_;
+  Gtk::Label* label_gap_;
+
 
   //Filters and Feature detectors
   void selection(cv::Mat image);
@@ -66,58 +120,6 @@ class Viewer {
   double getS(double r, double g, double b);
   double getV(double r, double g, double b);
 
- private:
-
-  Glib::RefPtr<Gnome::Glade::Xml> refXml;
-
-  Gtk::Image* gtkimage;  // input image
-  Gtk::Image* gtkimage2;  // output image
-  Gtk::Window* mainwindow;
-  Gtk::Main gtkmain;
-
-  //IplImage* imagenO;
-  cv::Mat imagenO;
-  pthread_mutex_t mutex;
-
-  // Horizontal slidebars
-  Gtk::HScale* scale_sobel;
-  Gtk::HScale* scale_canny;
-  Gtk::HScale* hough_threshold;
-  Gtk::HScale* hough_long;
-  Gtk::HScale* hough_gap;
-
-  // Vertical slidebars
-  Gtk::VScale* Hmax;
-  Gtk::VScale* Hmin;
-  Gtk::VScale* Vmax;
-  Gtk::VScale* Vmin;
-  Gtk::VScale* Smax;
-  Gtk::VScale* Smin;
-
-  Gtk::EventBox* eventbox;
-
-  // Check buttons that implement the filters
-  Gtk::CheckButton* button_canny;
-  Gtk::CheckButton* button_sobel;
-  Gtk::CheckButton* button_laplace;
-  Gtk::CheckButton* button_hough;
-  Gtk::CheckButton* button_harris;
-  Gtk::CheckButton* button_default;
-  Gtk::CheckButton* button_gray;
-  Gtk::CheckButton* button_flow;
-  Gtk::CheckButton* button_conv;
-  Gtk::CheckButton* button_pyramid;
-  Gtk::CheckButton* button_color;
-  Gtk::CheckButton* button_houghcircles;
-
-  // Selection of Method
-  Gtk::ComboBox* hough_combobox;
-  Gtk::ComboBox* conv_combobox;
-
-  // Labels
-  Gtk::Label* label_long;
-  Gtk::Label* label_gap;
-
   //Checks if the button has been clicked
   void button_canny_clicked();
   void button_sobel_clicked();
@@ -133,18 +135,18 @@ class Viewer {
   void button_pyramid_clicked();
 
   // Checkbox control
-  int canny_box;
-  int sobel_box;
-  int laplace_box;
-  int harris_box;
-  int hough_box;
-  int houghcircles_box;
-  int def_box;
-  int gray_box;
-  int flow_box;
-  int color_box;
-  int conv_box;
-  int pyramid_box;
+  int canny_box_;
+  int sobel_box_;
+  int laplace_box_;
+  int harris_box_;
+  int hough_box_;
+  int houghcircles_box_;
+  int def_box_;
+  int gray_box_;
+  int flow_box_;
+  int color_box_;
+  int conv_box_;
+  int pyramid_box_;
 
 };
 

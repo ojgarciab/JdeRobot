@@ -75,7 +75,6 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-    std::cout << "Format: " << data->description->format << std::endl;
     colorspaces::Image::FormatPtr fmt =
         colorspaces::Image::Format::searchFormat(data->description->format);
 
