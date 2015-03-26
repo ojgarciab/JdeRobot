@@ -25,73 +25,72 @@
 #include <visionlib/colorspaces/colorspacesmm.h>
 #include "viewer.h"
 
-int main(int argc, char** argv){
+int main(int argc, char** argv) {
   int status;
   opencvdemo::Viewer viewer;
   Ice::CommunicatorPtr ic;
 
-  try{
-    ic = Ice::initialize(argc,argv);
+  try {
+    ic = Ice::initialize(argc, argv);
     Ice::ObjectPrx base = ic->propertyToProxy("Opencvdemo.Camera.Proxy");
-    if (0==base)
+    if (0 == base)
       throw "Could not create proxy";
 
     /*cast to CameraPrx*/
     jderobot::CameraPrx cprx = jderobot::CameraPrx::checkedCast(base);
-    if (0==cprx)
+    if (0 == cprx)
       throw "Invalid proxy";
 
-    while(viewer.isVisible()){
-      
-			jderobot::ImageDataPtr data = cprx->getImageData();
-      colorspaces::Image::FormatPtr fmt = colorspaces::Image::Format::searchFormat(data->description->format);
+    while (viewer.isVisible()) {
+
+      jderobot::ImageDataPtr data = cprx->getImageData();
+      colorspaces::Image::FormatPtr fmt =
+          colorspaces::Image::Format::searchFormat(data->description->format);
 
       if (!fmt)
-				throw "Format not supported";
+        throw "Format not supported";
 
-			 char * data1 = new char[data->description->width*data->description->height*3];
+      char * data1 = new char[data->description->width
+          * data->description->height * 3];
 
-			memcpy((unsigned char *)data1, &(data->pixelData[0]), data->description->width*data->description->height*3);
+      memcpy((unsigned char *) data1, &(data->pixelData[0]),
+             data->description->width * data->description->height * 3);
 
-			// Get input image 
+      // Get input image 
       /*colorspaces::Image image(data->description->width,
-			       data->description->height,
-			       fmt,
-			       &(data->pixelData[0]));*/
-	cv::Mat image (data->description->height, 
-		   data->description->width,
-		   CV_8UC3,
-		   &(data->pixelData[0]));
-	
-			// Get output image
-     /*colorspaces::Image image2(data->description->width,
-			       data->description->height,
-			       fmt,
-			       data1);*/
+       data->description->height,
+       fmt,
+       &(data->pixelData[0]));*/
+      cv::Mat image(data->description->height, data->description->width,
+                    CV_8UC3, &(data->pixelData[0]));
 
-      cv::Mat image2 (data->description->height,
-		 data->description->width,
-		 CV_8UC3,
-		 data1);
+      // Get output image
+      /*colorspaces::Image image2(data->description->width,
+       data->description->height,
+       fmt,
+       data1);*/
 
-			//std::cout << data->description->width << std::endl;
-			//std::cout << data->description->height << std::endl;
-			//cv::Size s=image2.size();
-			//std::cout << s.width << std::endl;
-			//std::cout << s.height << std::endl;
-			//std::cout << "El step de image es:\n";
-			//std::cout << image.step << std::endl;
-			//std::cout << image.data << std::endl;
+      cv::Mat image2(data->description->height, data->description->width,
+                     CV_8UC3, data1);
 
-			// Selecting the operation
-			viewer.selection(image2);
-      
-			// Displaying the images
-			viewer.display(image,image2);
-			delete data1;
-	
+      //std::cout << data->description->width << std::endl;
+      //std::cout << data->description->height << std::endl;
+      //cv::Size s=image2.size();
+      //std::cout << s.width << std::endl;
+      //std::cout << s.height << std::endl;
+      //std::cout << "El step de image es:\n";
+      //std::cout << image.step << std::endl;
+      //std::cout << image.data << std::endl;
+
+      // Selecting the operation
+      viewer.selection(image2);
+
+      // Displaying the images
+      viewer.display(image, image2);
+      delete data1;
+
     }
-  }catch (const Ice::Exception& ex) {
+  } catch (const Ice::Exception& ex) {
     std::cerr << ex << std::endl;
     status = 1;
   } catch (const char* msg) {

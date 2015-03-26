@@ -31,7 +31,7 @@
                         <property name="left_padding">40</property>
                         <property name="right_padding">40</property>
                         <child>
-                          <widget class="GtkEventBox" id="eventbox1">
+                          <widget class="GtkEventBox" id="eventbox">
                             <property name="visible">True</property>
                             <child>
                               <widget class="GtkImage" id="imageI">
@@ -805,7 +805,7 @@ Probabilistic</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <widget class="GtkLabel" id="label16">
+                                  <widget class="GtkLabel" id="label_long">
                                     <property name="visible">True</property>
                                     <property name="label" translatable="yes">Max Lenght</property>
                                   </widget>
@@ -815,7 +815,7 @@ Probabilistic</property>
                                 </child>
                                 <child>
                                   <widget class="GtkHScale" id="hough_long">
-                                    <property name="visible">True</property>
+                                    <property name="visible">False</property>
                                     <property name="can_focus">True</property>
                                     <property name="adjustment">1 1 100 0 0 0</property>
                                     <property name="value_pos">left</property>
@@ -825,7 +825,7 @@ Probabilistic</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <widget class="GtkLabel" id="label17">
+                                  <widget class="GtkLabel" id="label_gap">
                                     <property name="visible">True</property>
                                     <property name="label" translatable="yes">Max Gap</property>
                                   </widget>
