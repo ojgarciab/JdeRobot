@@ -32,7 +32,7 @@
 
 namespace opencvdemo {
 
-const std::string gladepath = std::string("./opencvdemo.glade");
+const std::string kGladePath = std::string("./opencvdemo.glade");
 
 int opflow_first = 1;
 cv::Mat previous;
@@ -55,7 +55,7 @@ Viewer::Viewer()
 
   /* Load glade GUI from XML file */
   std::cout << "Loading glade" << std::endl;
-  refXml = Gnome::Glade::Xml::create(gladepath);
+  refXml = Gnome::Glade::Xml::create(kGladePath);
 
   /* Load GUI components on private */
   refXml->get_widget("imageI", gtkimage);
@@ -504,15 +504,12 @@ void Viewer::pyramid(cv::Mat image) {
   pyrDown(div8, div16);
 
   dst = cv::Mat::zeros(dst.size(), CV_8UC3);
-  //w = image.width*3;
   w = imasize.width * 3;
   cv::Size div2size = div2.size();
   cv::Size div4size = div4.size();
   cv::Size div8size = div8.size();
   cv::Size div16size = div16.size();
-  //for(i=0; i<image.height/2; i++) {
   for (i = 0; i < imasize.height / 2; i++) {
-    //w2 = div2->width*div2->nChannels;
     w2 = div2size.width * div2.channels();
     memcpy((dst.data) + w * i, (div2.data) + w2 * i, w2);
     //if(i<image.height/4) {
@@ -539,63 +536,41 @@ void Viewer::pyramid(cv::Mat image) {
   //cvCopy(dst,&src);
   dst.copyTo(image);
 
-  //cvReleaseImage(&div2);
   ~div2;
-  //cvReleaseImage(&div4);
   ~div4;
-  //cvReleaseImage(&div8);
   ~div8;
-  //cvReleaseImage(&div16);
   ~div16;
-  //cvReleaseImage(&dst);
   ~dst;
 
 }
 
-//void Viewer::sobel( const colorspaces::Image& image ){
 void Viewer::sobel(cv::Mat image) {
 
   int aperture = scale_sobel->get_value();
   if (aperture % 2 == 0) {
     aperture++;
   }
-  //IplImage src=image;
   cv::Mat src;
   image.copyTo(src);
-  //IplImage *gray; 
-  //IplImage *dst;
-  //IplImage *gaux;
 
-  //gray = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat gray(image.size(), CV_8UC1);
-  //dst = cvCreateImage(cvSize(image.width,image.height), 16, 3);
   cv::Mat dst(image.size(), CV_16SC1);
-  //gaux = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat gaux(image.size(), CV_8UC1);
 
-  //cvCvtColor(&src, gray, CV_RGB2GRAY); 
   cvtColor(src, gray, CV_RGB2GRAY);
-  //cvSobel(gray, dst, 0, 1, aperture);
   Sobel(gray, dst, dst.depth(), 0, 1, aperture);
-  //cvConvertScale(dst,gaux,1,0);
   dst.convertTo(gaux, gaux.type(), 1, 0);
-  //cvCvtColor(gaux, &src, CV_GRAY2RGB);
   cvtColor(gaux, src, CV_GRAY2RGB);
 
   src.copyTo(image);
 
-  //cvReleaseImage(&gray);
   ~gray;
-  //cvReleaseImage(&dst);
   ~dst;
-  //cvReleaseImage(&gaux);
   ~gaux;
-
   ~src;
 
 }
 
-// void Viewer::canny( const colorspaces::Image& image )
 void Viewer::canny(cv::Mat image) {
 
   int aperture = scale_sobel->get_value();
@@ -606,148 +581,93 @@ void Viewer::canny(cv::Mat image) {
     aperture = 3;
   else if (aperture > 7)
     aperture = 7;
-  //IplImage src=image;
   cv::Mat src;
   image.copyTo(src);
-  //IplImage *gray; 
-  //IplImage *dst;
 
-  //gray = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat gray(image.size(), CV_8UC1);
-  //dst = cvCreateImage (cvSize(image.width,image.height), 8, 3);
   cv::Mat dst(image.size(), CV_8UC1);
 
-  //cvCvtColor(&src, gray, CV_RGB2GRAY);
   cvtColor(src, gray, CV_RGB2GRAY);
-  //cvCanny( gray, dst, scale_canny->get_value(),scale_canny->get_value()*3,  aperture);
   Canny(gray, dst, scale_canny->get_value(), scale_canny->get_value() * 3,
         aperture);
-  //cvCvtColor(dst, &src, CV_GRAY2RGB);  
   cvtColor(dst, src, CV_GRAY2RGB);
 
   src.copyTo(image);
 
-//colorspaces::ImageRGB8 img_rgb8(image); 
-
-  //cvReleaseImage(&gray);
   ~gray;
-  //cvReleaseImage(&dst);
   ~dst;
-
   ~src;
 }
 
-// void Viewer::gray( const colorspaces::Image& image )
-
 void Viewer::gray(cv::Mat image) {
-  //IplImage src=image;
   cv::Mat src;
   image.copyTo(src);
-  //IplImage *gray; 
-  //IplImage *dst;
 
-  //gray = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat gray(image.size(), CV_8UC1);
-  //dst = cvCreateImage (cvSize(image.width,image.height), 8, 3);
   cv::Mat dst(image.size(), CV_8UC1);
-  //cvCvtColor(&src, gray, CV_RGB2GRAY);
   cvtColor(src, gray, CV_RGB2GRAY);
-  //cvCvtColor(gray, &src, CV_GRAY2RGB);  
   cvtColor(gray, src, CV_GRAY2RGB);
 
   src.copyTo(image);
 
-  //cvReleaseImage(&gray);
   ~gray;
-  //cvReleaseImage(&dst);
   ~dst;
   ~src;
 }
 
-//void Viewer::harris( const colorspaces::Image& image )
 void Viewer::harris(cv::Mat image) {
-  //IplImage src=image;
   cv::Mat src;
   image.copyTo(src);
-  //IplImage *gray; 
-  //IplImage *dst;
-  //IplImage *gaux;
+
   int aperture = scale_sobel->get_value();
   if (aperture % 2 == 0) {
     aperture += 1;
   }
-  //gray = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat gray(image.size(), CV_8UC1);
-  //dst = cvCreateImage(cvSize(image.width,image.height), 32, 3);
   cv::Mat dst(image.size(), CV_32FC1);
-  //gaux = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat gaux(image.size(), CV_8UC1);
 
-  //cvCvtColor(&src, gray, CV_RGB2GRAY);
   cvtColor(src, gray, CV_RGB2GRAY);
-  //cvCornerHarris(gray, dst, 5, scale_sobel->get_value(), 0.04); 
   cornerHarris(gray, dst, 5, aperture, 0.04);
-  //cvConvertScale(dst,gaux,1,0);
   dst.convertTo(gaux, gaux.type(), 1, 0);
-  //cvCvtColor(gaux, &src, CV_GRAY2RGB);
   cvtColor(gaux, src, CV_GRAY2RGB);
 
   src.copyTo(image);
 
-  //cvReleaseImage(&gray);
   ~gray;
-  //cvReleaseImage(&dst);
   ~dst;
-  //cvReleaseImage(&gaux);
   ~gaux;
-
   ~src;
 }
 
-//void Viewer::hough_circles( const colorspaces::Image& image )
 void Viewer::hough_circles(cv::Mat image) {
-  //IplImage src=image;
   cv::Mat src;
   image.copyTo(src);
-  //IplImage *gray; 
 
-  //gray = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat gray(image.size(), CV_8UC1);
-  //CvMemStorage* storage = cvCreateMemStorage(0);        
   std::vector < cv::Vec3f > circles;
-  //cvCvtColor( &src, gray, CV_BGR2GRAY );
   cvtColor(src, gray, CV_BGR2GRAY);
-  //cvSmooth( gray, gray, CV_GAUSSIAN, 9, 9 ); 
   cv::Size graysize = gray.size();
   GaussianBlur(gray, gray, cv::Size(9, 9), 0, 0);  // smooth it, otherwise a lot of false circles may be detected        
-  //CvSeq* circles = cvHoughCircles( gray, storage, CV_HOUGH_GRADIENT, 2, gray->height/4, 200, 100 );
   HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 2, graysize.height / 4, 200,
                100);
 
   size_t i;
 
-  //for( i = 0; i < circles->total; i++ )
   for (i = 0; i < circles.size(); i++) {
-    //float* p = (float*)cvGetSeqElem( circles, i );
     cv::Point p(cvRound (circles[i][0]), cvRound (circles[i][1]));
     int radius = cvRound(circles[i][2]);
-    //cvCircle( gray, cvPoint(cvRound(p[0]),cvRound(p[1])), 3, CV_RGB(255,255,0), -1, 8, 0 );
     circle(gray, p, 3, cv::Scalar(255, 255, 0), -1, 8, 0);
-    //cvCircle( gray, cvPoint(cvRound(p[0]),cvRound(p[1])), cvRound(p[2]), CV_RGB(255,255,0), 3, 8, 0 );
     circle(gray, p, radius, cv::Scalar(255, 255, 0), 3, 8, 0);
   }
-  //cvCvtColor(gray, &src, CV_GRAY2RGB);
   cvtColor(gray, src, CV_GRAY2RGB);
 
   src.copyTo(image);
 
-  //cvReleaseImage(&gray);
   ~gray;
-  //cvReleaseMemStorage(&storage);
   ~src;
 }
 
-//void Viewer::hough( const colorspaces::Image& image )
 void Viewer::hough(cv::Mat image) {
   int aperture = scale_sobel->get_value();
   if (aperture % 2 == 0) {
@@ -758,32 +678,20 @@ void Viewer::hough(cv::Mat image) {
   else if (aperture > 7)
     aperture = 7;
 
-  //IplImage src=image;
   cv::Mat src;
   image.copyTo(src);
-  //IplImage *color_dst; 
-  //IplImage *dst;
-  //IplImage *gray;
 
   int method = hough_combobox->get_active_row_number();
 
-  //color_dst = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat color_dst(image.size(), CV_8UC3);
-  //dst = cvCreateImage (cvSize(image.width,image.height), 8, 3);
   cv::Mat dst(image.size(), CV_8UC1);
-  //gray = cvCreateImage (cvSize(image.width,image.height), 8, 3);      
   cv::Mat gray(image.size(), CV_8UC1);
-  //CvMemStorage* storage = cvCreateMemStorage(0);
-  //CvSeq* lines = 0;
   std::vector < cv::Vec2f > lines;
   size_t i;
 
-  //cvCvtColor(&src, gray, CV_RGB2GRAY);  
   cvtColor(src, gray, CV_RGB2GRAY);
-  //cvCanny( gray, dst, scale_canny->get_value(), scale_canny->get_value()*3, aperture);
   Canny(gray, dst, scale_canny->get_value(), scale_canny->get_value() * 3,
         aperture);
-  //cvCvtColor( dst, color_dst, CV_GRAY2BGR );
   cvtColor(dst, color_dst, CV_GRAY2BGR);
 
   if (method == 0) {
@@ -791,35 +699,17 @@ void Viewer::hough(cv::Mat image) {
     hough_gap->hide();
     label_long->hide();
     label_gap->hide();
-    //lines = cvHoughLines2( dst,
-    //storage,
-    //CV_HOUGH_STANDARD,
-    //1,
-    //CV_PI/180,
-    //hough_threshold->get_value(),
-    //0,
-    //0 );
     HoughLines(dst, lines, 1, CV_PI / 180, hough_threshold->get_value(), 0, 0);
 
-    //for( i = 0; i < MIN(lines->total,100); i++ )
     for (i = 0; i < MIN(lines.size(), 100); i++) {
 
-      //float* line = (float*)cvGetSeqElem(lines,i);
-      //float rho = line[0];
       float rho = lines[i][0];
-      //float theta = line[1];
       float theta = lines[i][1];
-      //CvPoint pt1, pt2;
       double a = cos(theta), b = sin(theta);
       double x0 = a * rho, y0 = b * rho;
-      //pt1.x = cvRound(x0 + 1000*(-b));
-      //pt1.y = cvRound(y0 + 1000*(a));
       cv::Point pt1(cvRound(x0 + 1000 * (-b)), cvRound(y0 + 1000 * (a)));
-      //pt2.x = cvRound(x0 - 1000*(-b));
-      //pt2.y = cvRound(y0 - 1000*(a));
       cv::Point pt2(cvRound(cvRound(x0 - 1000 * (-b))),
                     cvRound(y0 - 1000 * (a)));
-      //cvLine( color_dst, pt1, pt2, CV_RGB(255,0,0), 3, 8 );
       line(color_dst, pt1, pt2, cv::Scalar(255, 0, 0), 3, 8);
     }
   } else {
@@ -831,53 +721,31 @@ void Viewer::hough(cv::Mat image) {
 
       std::vector < cv::Vec4i > linesp;
 
-      //lines = cvHoughLines2( dst,
-      //storage,
-      //CV_HOUGH_PROBABILISTIC,
-      //1,
-      //CV_PI/180,
-      //hough_threshold->get_value(),
-      //hough_long->get_value(),
-      //hough_gap->get_value());
       HoughLinesP(dst, linesp, 1, CV_PI / 180, hough_threshold->get_value(),
                   hough_long->get_value(), hough_gap->get_value());
 
-      //for( i = 0; i < lines->total; i++ )
       for (i = 0; i < linesp.size(); i++) {
-        //CvPoint* line = (CvPoint*)cvGetSeqElem(lines,i);
         line(color_dst, cv::Point(linesp[i][0], linesp[i][1]),
              cv::Point(linesp[i][2], linesp[i][3]), cv::Scalar(255, 0, 0), 3,
              8);
-        //cvLine( color_dst, line[0], line[1], CV_RGB(255,0,0), 3, 8 );
       }
     }
   }
-  //cvCopy(color_dst,&src,0);
   color_dst.copyTo(src);
   src.copyTo(image);
 
-  //cvReleaseImage(&color_dst);
   ~color_dst;
-  //cvReleaseImage(&dst);
   ~dst;
-  //cvReleaseImage(&gray);
   ~gray;
-  //cvReleaseMemStorage(&storage);
   ~src;
 }
 
-// void Viewer::flow( const colorspaces::Image& image )
-
 void Viewer::flow(cv::Mat image) {
-  //IplImage src=image;
   cv::Mat src;
   image.copyTo(src);
-  //IplImage *img1, *img2, *aux1, *aux2,  *aux3, *aux4;
 
   if (opflow_first) {
-    //if(previous==NULL)
     if (previous.empty())
-      //previous = cvCreateImage(cvSize(image.width,image.height), 8, 3);
       previous.create(image.size(), CV_8UC3);
     src.copyTo(previous);
     opflow_first = 0;
@@ -885,48 +753,22 @@ void Viewer::flow(cv::Mat image) {
     return;
   }
   /* Images with feature points */
-  //img1 = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat img1(image.size(), CV_8UC1);
-  //img2 = cvCreateImage(cvSize(image.width,image.height), 8, 3);
   cv::Mat img2(image.size(), CV_8UC1);
 
   cv::TermCriteria criteria = cv::TermCriteria(
       CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, .03);
 
   /*Temp images for algorithms*/
-  //aux1 = cvCreateImage(cvSize(image.width,image.height), 32, 3);
-  //cv::Mat aux1(image.size(),CV_32FC1);
-  //aux2 = cvCreateImage(cvSize(image.width,image.height), 32, 3);
-  //cv::Mat aux2(image.size(), CV_32FC1);
-  //aux3 = cvCreateImage(cvSize(image.width,image.height), 8, 3);
-  //cv::Mat aux3(image.size(), CV_8UC1);
-  //aux4 = cvCreateImage(cvSize(image.width,image.height), 8, 3);
-  //cv::Mat aux4(image.size(), CV_8UC1);
-  //cvConvertImage(previous, img1);
-  //previous.convertTo(img1, CV_8UC1);
-  //img1.reshape(1);
-  //std::cout << img1.channels() << std::endl;
-  //std::cout << img2.channels() << std::endl;
-  //previous.copyTo(img1);
   cvtColor(previous, img1, CV_RGB2GRAY);
-  //cvConvertImage(&src, img2);
-  //src.convertTo(img2, CV_8UC1);
-  //img2.reshape(1);
-  //src.copyTo(img2);
   cvtColor(src, img2, CV_RGB2GRAY);
-  //img1.convertTo(img1,CV_8UC1);
-  //img2.convertTo(img2,CV_8UC1);
 
   int i;
-  int numpoints = 90;  // 300;
-  //CvPoint2D32f points1[numpoints];  
-  std::vector < cv::Point2f > points[2];/*Feature points from img1*/
-  //CvPoint2D32f points2[numpoints];  
-  //std::vector<cv::Point2f> points2; /*Location of the feature points in img2*/
+  int numpoints = 90; // 300;
+  std::vector < cv::Point2f > points[2]; /* Feature points from img1 */
   std::vector < uchar > foundPoint;
   std::vector<float> errors;
-  //CvSize sizeWindow = cvSize(5,5);
-  cv::Size sizeWindow(31, 31)/*(5,5)*/, pixWinSize(15, 15);
+  cv::Size sizeWindow(31, 31), pixWinSize(15, 15);
   //CvTermCriteria termCriteria;
 
   //termCriteria = cvTermCriteria( CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, .3 );
@@ -939,30 +781,19 @@ void Viewer::flow(cv::Mat image) {
 
     cornerSubPix(img1, points[0], pixWinSize, cv::Size(-1, -1), criteria);
     /* Pyramidal Lucas Kanade Optical Flow algorithm, search feature points in img2 */
-    //cvCalcOpticalFlowPyrLK(img1, img2, aux3, aux4, points1, points2, numpoints, sizeWindow, 5, foundPoint, errors, termCriteria, 0);
     calcOpticalFlowPyrLK(img1, img2, points[0], points[1], foundPoint, errors,
                          sizeWindow, 5, criteria);
 
     /*Esta funcion sirve para colorear los puntos encontrados. Reservado para depuración.*/
-    /*for(int k=0; k< numpoints; k++)  {
-     circle(src, points[0][k], 3, cv::Scalar(0, 0, 255), -1); //Azul punto principio
-     circle(src, points[1][k], 3, cv::Scalar(0, 255, 0), -1); // Verde punto final
-     }*/
     /* Draw arrows*/
     for (i = 0; i < numpoints; i++) {
       if (foundPoint[i] == 0)
         continue;
 
       int line_thickness = 1;
-      //CvScalar line_color = CV_RGB(255,0,0);
       cv::Scalar line_color(255, 0, 0);
 
-      //CvPoint p,q;
-      //p.x = (int) points1[i].x;
-      //p.y = (int) points1[i].y;
       cv::Point p((int) points[0][i].x, (int) points[0][i].y);
-      //q.x = (int) points2[i].x;
-      //q.y = (int) points2[i].y;
       cv::Point q((int) points[1][i].x, (int) points[1][i].y);
 
       double angle = atan2((double) p.y - q.y, (double) p.x - q.x);
@@ -974,67 +805,49 @@ void Viewer::flow(cv::Mat image) {
       /*Line*/
       q.x = (int) (p.x - 1 * hypotenuse * cos(angle));
       q.y = (int) (p.y - 1 * hypotenuse * sin(angle));
-      //cvLine(&src, p, q, line_color, line_thickness, CV_AA, 0 );
       line(src, p, q, line_color, line_thickness, CV_AA, 0);
 
       /*Arrow*/
       p.x = (int) (q.x + 9 * cos(angle + PI / 4));
       p.y = (int) (q.y + 9 * sin(angle + PI / 4));
-      //cvLine(&src, p, q, line_color, line_thickness, CV_AA, 0 );
       line(src, p, q, line_color, line_thickness, CV_AA, 0);
       p.x = (int) (q.x + 9 * cos(angle - PI / 4));
       p.y = (int) (q.y + 9 * sin(angle - PI / 4));
-      //cvLine(&src, p, q, line_color, line_thickness, CV_AA, 0 );
       line(src, p, q, line_color, line_thickness, CV_AA, 0);
     }
   }
 
-  //cvCopy(&src,previous,0);
   src.copyTo(image);
   image.copyTo(previous);
 
-  //cvReleaseImage(&img1);
   ~img1;
-  //cvReleaseImage(&img2);
   ~img2;
-  //cvReleaseImage(&aux1);
-  //~aux1;
-  //cvReleaseImage(&aux2);
-  //~aux2;
-  //cvReleaseImage(&aux3);
-  //~aux3;
-  //cvReleaseImage(&aux4);
-  //~aux4;
   ~src;
 }
 
-//void Viewer::display( const colorspaces::Image& image, const colorspaces::Image& image2 )
-void Viewer::display(cv::Mat image, cv::Mat image2) {
-  //colorspaces::ImageRGB8 img_rgb8(image);
-  //colorspaces::ImageRGB8 img_rgb8_2(image2);
+void Viewer::DisplayError() {
+  pthread_mutex_unlock (&mutex);
+  gtkimage->set(Gtk::Stock::MISSING_IMAGE, Gtk::ICON_SIZE_DIALOG);
+  mainwindow->resize(1, 1);
+  while (gtkmain.events_pending())
+    gtkmain.iteration();
+  pthread_mutex_lock(&mutex);
+}
+
+void Viewer::Display(cv::Mat image) {
+  cv::Mat image2(image.size(), CV_8UC3);
+  image.copyTo(image2);
+  selection(image2);
+
   cv::Mat img_mat(image.size(), CV_8UC3);
   image.copyTo(img_mat);
 
   cv::Mat img_mat2(image2.size(), CV_8UC3);
   image2.copyTo(img_mat2);
 
-  //IplImage img = image; 
-  //cv::Mat img;
-  //image.copyTo(img);
-  //imagenO = cvCreateImage(cvGetSize(&img), 8, 3);
   imagenO.create(image.size(), CV_8UC3);
-  //cvCopy(&img, imagenO);
   img_mat.copyTo(imagenO);
   pthread_mutex_unlock (&mutex);
-
-  /*Glib::RefPtr<Gdk::Pixbuf> imgBuff = 
-   Gdk::Pixbuf::create_from_data((const guint8*)img_rgb8.data,
-   Gdk::COLORSPACE_RGB,
-   false,
-   8,
-   img_rgb8.width,
-   img_rgb8.height,
-   img_rgb8.step);*/
 
   cv::Size img_mat_size = img_mat.size();
   cv::Size imagesize = image.size();
@@ -1049,24 +862,13 @@ void Viewer::display(cv::Mat image, cv::Mat image2) {
   Glib::RefPtr < Gdk::Pixbuf > imgBuff = Gdk::Pixbuf::create_from_data(
       (const guint8*) img_mat.data, Gdk::COLORSPACE_RGB, false, 8,
       img_mat_size.width, img_mat_size.height,
-      //img_mat_size.width*img_mat.elemSize());
       img_mat.step);
-
-  /*Glib::RefPtr<Gdk::Pixbuf> imgBuff2 = 
-   Gdk::Pixbuf::create_from_data((const guint8*)img_rgb8_2.data,
-   Gdk::COLORSPACE_RGB,
-   false,
-   8,
-   img_rgb8_2.width,
-   img_rgb8_2.height,
-   img_rgb8_2.step);*/
 
   cv::Size img_mat2_size = img_mat2.size();
 
   Glib::RefPtr < Gdk::Pixbuf > imgBuff2 = Gdk::Pixbuf::create_from_data(
       (const guint8*) img_mat2.data, Gdk::COLORSPACE_RGB, false, 8,
       img_mat2_size.width, img_mat2_size.height,
-      //img_mat2_size.width*img_mat2.elemSize());
       img_mat2.step);
 
   gtkimage->clear();
@@ -1079,18 +881,14 @@ void Viewer::display(cv::Mat image, cv::Mat image2) {
   while (gtkmain.events_pending())
     gtkmain.iteration();
   pthread_mutex_lock(&mutex);
-  //cvReleaseImage(&imagenO);
   ~imagenO;
-
 }
 
 void Viewer::button_pyramid_clicked() {
-
   if (pyramid_box)
     pyramid_box = 0;
   else
     pyramid_box = 1;
-
 }
 
 void Viewer::button_conv_clicked() {
@@ -1143,7 +941,6 @@ void Viewer::button_canny_clicked() {
 }
 
 void Viewer::button_harris_clicked() {
-
   if (harris_box)
     harris_box = 0;
   else
@@ -1155,7 +952,6 @@ void Viewer::button_hough_clicked() {
     hough_box = 0;
   else
     hough_box = 1;
-
 }
 
 void Viewer::button_flow_clicked() {
@@ -1171,8 +967,6 @@ void Viewer::button_hough_circles_clicked() {
   else
     houghcircles_box = 1;
 }
-
-//void Viewer::selection( const colorspaces::Image& image ){
 
 void Viewer::selection(cv::Mat image) {
 
@@ -1287,4 +1081,4 @@ void Viewer::selection(cv::Mat image) {
   }
 }
 
-}  //namespace
+}  // namespace

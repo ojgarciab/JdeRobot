@@ -8,10 +8,10 @@
     <child>
       <widget class="GtkAlignment" id="alignment1">
         <property name="visible">True</property>
-        <property name="top_padding">27</property>
-        <property name="bottom_padding">29</property>
-        <property name="left_padding">20</property>
-        <property name="right_padding">20</property>
+        <property name="top_padding">18</property>
+        <property name="bottom_padding">18</property>
+        <property name="left_padding">18</property>
+        <property name="right_padding">18</property>
         <child>
           <widget class="GtkVBox" id="vbox1">
             <property name="visible">True</property>
@@ -26,10 +26,10 @@
                     <child>
                       <widget class="GtkAlignment" id="alignment2">
                         <property name="visible">True</property>
-                        <property name="top_padding">10</property>
-                        <property name="bottom_padding">10</property>
-                        <property name="left_padding">40</property>
-                        <property name="right_padding">40</property>
+                        <property name="top_padding">6</property>
+                        <property name="bottom_padding">6</property>
+                        <property name="left_padding">12</property>
+                        <property name="right_padding">12</property>
                         <child>
                           <widget class="GtkEventBox" id="eventbox">
                             <property name="visible">True</property>
@@ -67,10 +67,10 @@
                     <child>
                       <widget class="GtkAlignment" id="alignment3">
                         <property name="visible">True</property>
-                        <property name="top_padding">10</property>
-                        <property name="bottom_padding">10</property>
-                        <property name="left_padding">40</property>
-                        <property name="right_padding">40</property>
+                        <property name="top_padding">6</property>
+                        <property name="bottom_padding">6</property>
+                        <property name="left_padding">12</property>
+                        <property name="right_padding">12</property>
                         <child>
                           <widget class="GtkImage" id="imageO">
                             <property name="visible">True</property>

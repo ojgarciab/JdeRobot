@@ -42,7 +42,8 @@ class Viewer {
   ~Viewer();
 
   // function that actually displays the images
-  void display(cv::Mat image, cv::Mat image2);
+  void DisplayError();
+  void Display(cv::Mat image);
   bool isVisible();
   bool on_clicked(GdkEventButton * event);
 
@@ -96,26 +97,26 @@ class Viewer {
   Gtk::EventBox* eventbox;
 
   // Check buttons that implement the filters
-  Gtk::CheckButton * button_canny;
-  Gtk::CheckButton * button_sobel;
-  Gtk::CheckButton * button_laplace;
-  Gtk::CheckButton * button_hough;
-  Gtk::CheckButton * button_harris;
-  Gtk::CheckButton * button_default;
-  Gtk::CheckButton * button_gray;
-  Gtk::CheckButton * button_flow;
-  Gtk::CheckButton * button_conv;
-  Gtk::CheckButton * button_pyramid;
-  Gtk::CheckButton * button_color;
-  Gtk::CheckButton * button_houghcircles;
+  Gtk::CheckButton* button_canny;
+  Gtk::CheckButton* button_sobel;
+  Gtk::CheckButton* button_laplace;
+  Gtk::CheckButton* button_hough;
+  Gtk::CheckButton* button_harris;
+  Gtk::CheckButton* button_default;
+  Gtk::CheckButton* button_gray;
+  Gtk::CheckButton* button_flow;
+  Gtk::CheckButton* button_conv;
+  Gtk::CheckButton* button_pyramid;
+  Gtk::CheckButton* button_color;
+  Gtk::CheckButton* button_houghcircles;
 
   // Selection of Method
-  Gtk::ComboBox * hough_combobox;
-  Gtk::ComboBox * conv_combobox;
+  Gtk::ComboBox* hough_combobox;
+  Gtk::ComboBox* conv_combobox;
 
   // Labels
-  Gtk::Label * label_long;
-  Gtk::Label * label_gap;
+  Gtk::Label* label_long;
+  Gtk::Label* label_gap;
 
   //Checks if the button has been clicked
   void button_canny_clicked();
