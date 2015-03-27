@@ -67,7 +67,6 @@ int main(int argc, char** argv) {
       }
       /* Get next frame */
       image_data = camera_proxy->getImageData();
-      std::cerr << "----" << std::endl;
     } catch (const Ice::Exception& ex) {
       /* Show an error in stderr */
       std::cerr << "ICE error: " << ex << std::endl;
@@ -87,7 +86,6 @@ int main(int argc, char** argv) {
     if (!format_string)
       throw "Format not supported";
 
-    std::cerr << "----" << std::endl;
     std::cerr << image_data->pixelData[0] << std::endl;
     colorspaces::Image frame(image_data->description->width,
                              image_data->description->height, format_string,
