@@ -93,14 +93,16 @@ int main(int argc, char** argv) {
     } else if (supported_format_nv21.compare(image_data->description->format)
         == 0) {
       /* Convert Android's NV21 image format in GTK compatible format */
-      //colorspaces::ImageNV21::
-      image = colorspaces::Image(image_data->description->width,
-                                 image_data->description->height, "NV21",
-                                 &(image_data->pixelData[0]));
-      /* Create a OpenCV Mat from RGB8 data (8 bits per pixel) received */
-/*      image = cv::Mat(image_data->description->height,
-                      image_data->description->width, CV_8UC3,
-                      &(image_data->pixelData[0]));*/
+      colorspaces::ImageNV21 android(image_data->description->width,
+                                     image_data->description->height,
+                 &(image_data->pixelData[0]));
+      /* Create a image with same size that original but format RGB8 */
+      colorspaces::ImageRGB8 image2(image_data->description->width,
+                                    image_data->description->height);
+      /* Efective convert from NV21 to RGB8 */
+      colorspaces::ImageNV21::imageCvt(android, image2);
+      /* Convert old IplImage format used in colorspaces to newer cv::Mat */
+      image = cv::Mat(image2);
     } else {
       throw "Format not implemented";
     }
