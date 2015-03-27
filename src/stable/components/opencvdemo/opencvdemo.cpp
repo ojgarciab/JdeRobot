@@ -27,20 +27,20 @@
 #include <visionlib/colorspaces/colorspacesmm.h>
 #include "viewer.h"
 
-static std::string supported_format_1("RGB8");
+static std::string supported_format_rgb8("RGB8");
 
 int main(int argc, char** argv) {
-  int status;
   opencvdemo::Viewer viewer;
-  Ice::CommunicatorPtr ic;
+  Ice::CommunicatorPtr ice_communicator;
   Ice::ObjectPrx base;
-  jderobot::CameraPrx cprx = 0;
-  jderobot::ImageDataPtr data;
+  jderobot::CameraPrx camera_proxy = 0;
+  jderobot::ImageDataPtr image_data;
+  cv::Mat image;
 
   /* Initialize Ice and load parameters from command line */
   try {
-    ic = Ice::initialize(argc, argv);
-    base = ic->propertyToProxy("Opencvdemo.Camera.Proxy");
+    ice_communicator = Ice::initialize(argc, argv);
+    base = ice_communicator->propertyToProxy("Opencvdemo.Camera.Proxy");
     if (0 == base)
       throw "Could not create proxy";
   } catch (const Ice::Exception& ex) {
@@ -57,54 +57,46 @@ int main(int argc, char** argv) {
     /* Try to get next frame */
     try {
       /* Get casted proxy to access all Camera methods */
-      if (cprx == 0) {
-        cprx = jderobot::CameraPrx::checkedCast(base);
-        if (0 == cprx)
-          throw "Invalid proxy";
+      if (camera_proxy == 0) {
+        camera_proxy = jderobot::CameraPrx::checkedCast(base);
+        if (camera_proxy == 0) {
+          std::cerr << "ERROR: Invalid proxy" << std::endl;
+          return 1;
+        }
       }
       /* Get next frame */
-      data = cprx->getImageData();
+      image_data = camera_proxy->getImageData();
     } catch (const Ice::Exception& ex) {
       /* Show an error in stderr, show a error icon and wait 250ms before try again */
-      std::cerr << "Unexpected run‑time error: " << ex << std::endl;
+      std::cerr << "ICE error: " << ex << std::endl;
       viewer.DisplayError();
       usleep(250000);
       continue;
-    } catch (const char* msg) {
-      std::cerr << msg << std::endl;
-      return 1;
     }
 
-    colorspaces::Image::FormatPtr fmt =
-        colorspaces::Image::Format::searchFormat(data->description->format);
-
-    if (!fmt)
+    /* Check if format is supported by colorspaces */
+    colorspaces::Image::FormatPtr format_string =
+        colorspaces::Image::Format::searchFormat(
+            image_data->description->format);
+    if (!format_string)
       throw "Format not supported";
-    char * data1;
-    cv::Mat image;
-    if (supported_format_1.compare(data->description->format) == 0) {
-      data1 = new char[data->description->width
-          * data->description->height * 3];
-      memcpy((unsigned char *) data1, &(data->pixelData[0]),
-             data->description->width * data->description->height * 3);
-      image = cv::Mat(data->description->height, data->description->width,
-                    CV_8UC3, &(data->pixelData[0]));
-      cv::Mat image2(data->description->height, data->description->width, CV_8UC3,
-                     data1);
+
+    /* Check if format is supported by us (else we need to convert to RGB8) */
+    if (supported_format_rgb8.compare(image_data->description->format) == 0) {
+      image = cv::Mat(image_data->description->height,
+                      image_data->description->width, CV_8UC3,
+                      &(image_data->pixelData[0]));
     } else {
       throw "Format not implemented";
     }
 
-    // Selecting the operation
-    //viewer.selection(image2);
-
-    // Displaying the images
+    /* Display and process input image */
     viewer.Display(image);
-    delete data1;
-
   }
 
-  if (ic)
-    ic->destroy();
-  return status;
+  /* Free ICE resources */
+  if (ice_communicator)
+    ice_communicator->destroy();
+
+  return 0;
 }

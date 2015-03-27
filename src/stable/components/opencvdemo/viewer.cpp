@@ -65,8 +65,8 @@ Viewer::Viewer()
   ref_xml_->get_widget("scale_canny", scale_canny_);
   ref_xml_->get_widget("hough_combobox", combobox_hough_);
   ref_xml_->get_widget("conv_combobox", combobox_conv_);
-  ref_xml_->get_widget("label_long", label_long_);
-  ref_xml_->get_widget("label_gap", label_gap_);
+  ref_xml_->get_widget("label_long", label_hough_long_);
+  ref_xml_->get_widget("label_gap", label_hough_gap_);
   ref_xml_->get_widget("hough_threshold", scale_hough_threshold_);
   ref_xml_->get_widget("hough_long", scale_hough_long_);
   ref_xml_->get_widget("hough_gap", scale_hough_gap_);
@@ -92,29 +92,31 @@ Viewer::Viewer()
 
   /* Define callbacks on toggle GUI checkbox  */
   button_canny_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_canny_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_sobel_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_sobel_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_laplace_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_laplace_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_hough_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_hough_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_harris_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_harris_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_default_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_default_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_gray_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_gray_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_flow_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_flow_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_color_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_color_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_conv_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_conv_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_pyramid_->signal_clicked().connect(
-      sigc::mem_fun(this, &Viewer::button_pyramid_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
   button_houghcircles_->signal_toggled().connect(
-      sigc::mem_fun(this, &Viewer::button_hough_circles_clicked));
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
+  combobox_hough_->signal_changed().connect(
+      sigc::mem_fun(this, &Viewer::ButtonClicked));
 
   eventbox_->signal_button_press_event().connect(
       sigc::mem_fun(this, &Viewer::OnClickedEventBox));
@@ -122,8 +124,8 @@ Viewer::Viewer()
   /* Set to invisible some elements at start */
   scale_hough_long_->hide();
   scale_hough_gap_->hide();
-  label_long_->hide();
-  label_gap_->hide();
+  label_hough_long_->hide();
+  label_hough_gap_->hide();
 
   /* Set default element to first one */
   combobox_hough_->set_active(0);
@@ -151,7 +153,7 @@ bool Viewer::OnClickedEventBox(GdkEventButton * event) {
   posX = (int) event->x;
   posY = (int) event->y;
 
-  pthread_mutex_lock (&mutex_);
+  pthread_mutex_lock(&mutex_);
 
   indice = posY * imagenO_.step + posX * imagenO_.channels();
 
@@ -160,11 +162,10 @@ bool Viewer::OnClickedEventBox(GdkEventButton * event) {
   g = (float) (unsigned int) (unsigned char) hsvimage.data[indice + 1];
   b = (float) (unsigned int) (unsigned char) hsvimage.data[indice + 2];
   pthread_mutex_unlock(&mutex_);
-  ~hsvimage;
 
-  h = getH(r, g, b);
-  s = getS(r, g, b);
-  v = getV(r, g, b);
+  h = GetH(r, g, b);
+  s = GetS(r, g, b);
+  v = GetV(r, g, b);
 
   double rmax, rmin, gmax, gmin, bmax, bmin;
   rmax = h * DEGTORAD + 0.2;
@@ -213,7 +214,7 @@ bool Viewer::OnClickedEventBox(GdkEventButton * event) {
   return true;
 }
 
-void Viewer::laplace(cv::Mat image) {
+void Viewer::Laplace(cv::Mat image) {
 
   int aperture = scale_sobel_->get_value();
   if (aperture % 2 == 0) {
@@ -226,20 +227,14 @@ void Viewer::laplace(cv::Mat image) {
   cv::Mat gaux(image.size(), CV_8UC1);
 
   std::cout << aperture << std::endl;
-  cvtColor(src, gray, CV_RGB2GRAY);
+  cv::cvtColor(src, gray, CV_RGB2GRAY);
   Laplacian(gray, dst, gray.depth(), aperture);
   ////dst.convertTo(gaux, -1, 1, 0);
   convertScaleAbs(dst, gaux);
-  cvtColor(gaux, image, CV_GRAY2RGB);
-
-  ~gray;
-  ~dst;
-  ~gaux;
-  ~src;
-
+  cv::cvtColor(gaux, image, CV_GRAY2RGB);
 }
 
-int Viewer::valuesOK(double H, double S, double V) {
+int Viewer::CheckHsvValues(double H, double S, double V) {
 
   if (!((S <= scale_s_max_->get_value()) && (S >= scale_s_min_->get_value())
       && (V <= scale_v_max_->get_value()) && (V >= scale_v_min_->get_value())))
@@ -259,7 +254,7 @@ int Viewer::valuesOK(double H, double S, double V) {
   return 0;
 }
 
-double Viewer::getH(double r, double g, double b) {
+double Viewer::GetH(double r, double g, double b) {
   double max = 0.0;
   double min = 255.0;
 
@@ -296,7 +291,7 @@ double Viewer::getH(double r, double g, double b) {
 
   return 0;
 }
-double Viewer::getS(double r, double g, double b) {
+double Viewer::GetS(double r, double g, double b) {
   double max = 0.0;
   double min = 255.0;
 
@@ -317,7 +312,7 @@ double Viewer::getS(double r, double g, double b) {
 
   return (1.0 - (min / max));
 }
-double Viewer::getV(double r, double g, double b) {
+double Viewer::GetV(double r, double g, double b) {
   if (r >= g && r >= b)
     return r;
   if (g >= r && g >= b)
@@ -328,7 +323,7 @@ double Viewer::getV(double r, double g, double b) {
   return 0;
 }
 
-void Viewer::color(cv::Mat image) {
+void Viewer::ColorFilter(cv::Mat image) {
   cv::Mat src;
   image.copyTo(src);
 
@@ -341,15 +336,16 @@ void Viewer::color(cv::Mat image) {
   cv::Size size = cvResultado.size();
 
   for (i = 0; i < size.width * size.height; i++) {
-    r = (float)(unsigned int)(unsigned char) cvResultado.data[i * 3];
-    g = (float)(unsigned int)(unsigned char) cvResultado.data[i * 3 + 1];
-    b = (float)(unsigned int)(unsigned char) cvResultado.data[i * 3 + 2];
+    r = (float) (unsigned int) (unsigned char) cvResultado.data[i * 3];
+    g = (float) (unsigned int) (unsigned char) cvResultado.data[i * 3 + 1];
+    b = (float) (unsigned int) (unsigned char) cvResultado.data[i * 3 + 2];
 
-    h = getH(r, g, b);
-    s = getS(r, g, b);
-    v = getV(r, g, b);
+    h = GetH(r, g, b);
+    s = GetS(r, g, b);
+    v = GetV(r, g, b);
 
-    if (scale_h_max_->get_value() >= h * DEGTORAD && scale_h_min_->get_value() <= h * DEGTORAD
+    if (scale_h_max_->get_value() >= h * DEGTORAD
+        && scale_h_min_->get_value() <= h * DEGTORAD
         && scale_s_max_->get_value() >= s && scale_s_min_->get_value() <= s
         && scale_v_max_->get_value() >= v && scale_v_min_->get_value() <= v) {
       //hsv->imageData[i*3]   = hsv->imageData[i*3];
@@ -357,17 +353,15 @@ void Viewer::color(cv::Mat image) {
       //hsv->imageData[i*3+2] = hsv->imageData[i*3+2];
     } else {
       /* Gray Scale */
-      cvResultado.data[i * 3] = 0; //(unsigned char) (v*100/255);
-      cvResultado.data[i * 3 + 1] = 0; //(unsigned char) (v*100/255);
-      cvResultado.data[i * 3 + 2] = 0; //(unsigned char) (v*100/255);
+      cvResultado.data[i * 3] = 0;  //(unsigned char) (v*100/255);
+      cvResultado.data[i * 3 + 1] = 0;  //(unsigned char) (v*100/255);
+      cvResultado.data[i * 3 + 2] = 0;  //(unsigned char) (v*100/255);
     }
   }
   cvResultado.copyTo(image);
-  ~cvResultado;
-  ~src;
 }
 
-void Viewer::conv(cv::Mat image) {
+void Viewer::Conv(cv::Mat image) {
 
   int sizekernel;
   int offset;
@@ -476,14 +470,9 @@ void Viewer::conv(cv::Mat image) {
   }
 
   dst.copyTo(image);
-
-  ~dst;
-  ~tmp;
-  ~src;
-  ~mask;
 }
 
-void Viewer::pyramid(cv::Mat image) {
+void Viewer::Pyramid(cv::Mat image) {
 
   cv::Mat src;
   image.copyTo(src);
@@ -533,18 +522,10 @@ void Viewer::pyramid(cv::Mat image) {
       memcpy((dst.data) + w * i + tmp, (div16.data) + w2 * i, w2);
     }
   }
-  //cvCopy(dst,&src);
   dst.copyTo(image);
-
-  ~div2;
-  ~div4;
-  ~div8;
-  ~div16;
-  ~dst;
-
 }
 
-void Viewer::sobel(cv::Mat image) {
+void Viewer::Sobel(cv::Mat image) {
 
   int aperture = scale_sobel_->get_value();
   if (aperture % 2 == 0) {
@@ -557,21 +538,15 @@ void Viewer::sobel(cv::Mat image) {
   cv::Mat dst(image.size(), CV_16SC1);
   cv::Mat gaux(image.size(), CV_8UC1);
 
-  cvtColor(src, gray, CV_RGB2GRAY);
-  Sobel(gray, dst, dst.depth(), 0, 1, aperture);
+  cv::cvtColor(src, gray, CV_RGB2GRAY);
+  cv::Sobel(gray, dst, dst.depth(), 0, 1, aperture);
   dst.convertTo(gaux, gaux.type(), 1, 0);
-  cvtColor(gaux, src, CV_GRAY2RGB);
+  cv::cvtColor(gaux, src, CV_GRAY2RGB);
 
   src.copyTo(image);
-
-  ~gray;
-  ~dst;
-  ~gaux;
-  ~src;
-
 }
 
-void Viewer::canny(cv::Mat image) {
+void Viewer::Canny(cv::Mat image) {
 
   int aperture = scale_sobel_->get_value();
   if (aperture % 2 == 0) {
@@ -587,35 +562,27 @@ void Viewer::canny(cv::Mat image) {
   cv::Mat gray(image.size(), CV_8UC1);
   cv::Mat dst(image.size(), CV_8UC1);
 
-  cvtColor(src, gray, CV_RGB2GRAY);
-  Canny(gray, dst, scale_canny_->get_value(), scale_canny_->get_value() * 3,
-        aperture);
-  cvtColor(dst, src, CV_GRAY2RGB);
+  cv::cvtColor(src, gray, CV_RGB2GRAY);
+  cv::Canny(gray, dst, scale_canny_->get_value(), scale_canny_->get_value() * 3,
+            aperture);
+  cv::cvtColor(dst, src, CV_GRAY2RGB);
 
   src.copyTo(image);
-
-  ~gray;
-  ~dst;
-  ~src;
 }
 
-void Viewer::gray(cv::Mat image) {
+void Viewer::Gray(cv::Mat image) {
   cv::Mat src;
   image.copyTo(src);
 
   cv::Mat gray(image.size(), CV_8UC1);
   cv::Mat dst(image.size(), CV_8UC1);
-  cvtColor(src, gray, CV_RGB2GRAY);
-  cvtColor(gray, src, CV_GRAY2RGB);
+  cv::cvtColor(src, gray, CV_RGB2GRAY);
+  cv::cvtColor(gray, src, CV_GRAY2RGB);
 
   src.copyTo(image);
-
-  ~gray;
-  ~dst;
-  ~src;
 }
 
-void Viewer::harris(cv::Mat image) {
+void Viewer::Harris(cv::Mat image) {
   cv::Mat src;
   image.copyTo(src);
 
@@ -627,48 +594,40 @@ void Viewer::harris(cv::Mat image) {
   cv::Mat dst(image.size(), CV_32FC1);
   cv::Mat gaux(image.size(), CV_8UC1);
 
-  cvtColor(src, gray, CV_RGB2GRAY);
-  cornerHarris(gray, dst, 5, aperture, 0.04);
+  cv::cvtColor(src, gray, CV_RGB2GRAY);
+  cv::cornerHarris(gray, dst, 5, aperture, 0.04);
   dst.convertTo(gaux, gaux.type(), 1, 0);
-  cvtColor(gaux, src, CV_GRAY2RGB);
+  cv::cvtColor(gaux, src, CV_GRAY2RGB);
 
   src.copyTo(image);
-
-  ~gray;
-  ~dst;
-  ~gaux;
-  ~src;
 }
 
-void Viewer::hough_circles(cv::Mat image) {
+void Viewer::HoughCircles(cv::Mat image) {
   cv::Mat src;
   image.copyTo(src);
 
   cv::Mat gray(image.size(), CV_8UC1);
-  std::vector < cv::Vec3f > circles;
-  cvtColor(src, gray, CV_BGR2GRAY);
+  std::vector<cv::Vec3f> circles;
+  cv::cvtColor(src, gray, CV_BGR2GRAY);
   cv::Size graysize = gray.size();
-  GaussianBlur(gray, gray, cv::Size(9, 9), 0, 0);  // smooth it, otherwise a lot of false circles may be detected        
-  HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 2, graysize.height / 4, 200,
-               100);
+  cv::GaussianBlur(gray, gray, cv::Size(9, 9), 0, 0);  // smooth it, otherwise a lot of false circles may be detected
+  cv::HoughCircles(gray, circles, CV_HOUGH_GRADIENT, 2, graysize.height / 4,
+                   200, 100);
 
   size_t i;
 
   for (i = 0; i < circles.size(); i++) {
-    cv::Point p(cvRound (circles[i][0]), cvRound (circles[i][1]));
+    cv::Point p(cvRound(circles[i][0]), cvRound(circles[i][1]));
     int radius = cvRound(circles[i][2]);
-    circle(gray, p, 3, cv::Scalar(255, 255, 0), -1, 8, 0);
-    circle(gray, p, radius, cv::Scalar(255, 255, 0), 3, 8, 0);
+    cv::circle(gray, p, 3, cv::Scalar(255, 255, 0), -1, 8, 0);
+    cv::circle(gray, p, radius, cv::Scalar(255, 255, 0), 3, 8, 0);
   }
-  cvtColor(gray, src, CV_GRAY2RGB);
+  cv::cvtColor(gray, src, CV_GRAY2RGB);
 
   src.copyTo(image);
-
-  ~gray;
-  ~src;
 }
 
-void Viewer::hough(cv::Mat image) {
+void Viewer::Hough(cv::Mat image) {
   int aperture = scale_sobel_->get_value();
   if (aperture % 2 == 0) {
     aperture++;
@@ -686,20 +645,17 @@ void Viewer::hough(cv::Mat image) {
   cv::Mat color_dst(image.size(), CV_8UC3);
   cv::Mat dst(image.size(), CV_8UC1);
   cv::Mat gray(image.size(), CV_8UC1);
-  std::vector < cv::Vec2f > lines;
+  std::vector<cv::Vec2f> lines;
   size_t i;
 
-  cvtColor(src, gray, CV_RGB2GRAY);
-  Canny(gray, dst, scale_canny_->get_value(), scale_canny_->get_value() * 3,
-        aperture);
-  cvtColor(dst, color_dst, CV_GRAY2BGR);
+  cv::cvtColor(src, gray, CV_RGB2GRAY);
+  cv::Canny(gray, dst, scale_canny_->get_value(), scale_canny_->get_value() * 3,
+            aperture);
+  cv::cvtColor(dst, color_dst, CV_GRAY2BGR);
 
   if (method == 0) {
-    scale_hough_long_->hide();
-    scale_hough_gap_->hide();
-    label_long_->hide();
-    label_gap_->hide();
-    HoughLines(dst, lines, 1, CV_PI / 180, scale_hough_threshold_->get_value(), 0, 0);
+    HoughLines(dst, lines, 1, CV_PI / 180, scale_hough_threshold_->get_value(),
+               0, 0);
 
     for (i = 0; i < MIN(lines.size(), 100); i++) {
 
@@ -714,15 +670,12 @@ void Viewer::hough(cv::Mat image) {
     }
   } else {
     if (method == 1) {
-      scale_hough_long_->show();
-      scale_hough_gap_->show();
-      label_long_->show();
-      label_gap_->show();
+      std::vector<cv::Vec4i> linesp;
 
-      std::vector < cv::Vec4i > linesp;
-
-      HoughLinesP(dst, linesp, 1, CV_PI / 180, scale_hough_threshold_->get_value(),
-                  scale_hough_long_->get_value(), scale_hough_gap_->get_value());
+      HoughLinesP(dst, linesp, 1, CV_PI / 180,
+                  scale_hough_threshold_->get_value(),
+                  scale_hough_long_->get_value(),
+                  scale_hough_gap_->get_value());
 
       for (i = 0; i < linesp.size(); i++) {
         line(color_dst, cv::Point(linesp[i][0], linesp[i][1]),
@@ -733,14 +686,9 @@ void Viewer::hough(cv::Mat image) {
   }
   color_dst.copyTo(src);
   src.copyTo(image);
-
-  ~color_dst;
-  ~dst;
-  ~gray;
-  ~src;
 }
 
-void Viewer::flow(cv::Mat image) {
+void Viewer::OpticalFlow(cv::Mat image) {
   cv::Mat src;
   image.copyTo(src);
 
@@ -749,7 +697,6 @@ void Viewer::flow(cv::Mat image) {
       previous.create(image.size(), CV_8UC3);
     src.copyTo(previous);
     opflow_first = 0;
-    ~src;
     return;
   }
   /* Images with feature points */
@@ -760,13 +707,13 @@ void Viewer::flow(cv::Mat image) {
       CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, .03);
 
   /*Temp images for algorithms*/
-  cvtColor(previous, img1, CV_RGB2GRAY);
-  cvtColor(src, img2, CV_RGB2GRAY);
+  cv::cvtColor(previous, img1, CV_RGB2GRAY);
+  cv::cvtColor(src, img2, CV_RGB2GRAY);
 
   int i;
-  int numpoints = 90; // 300;
-  std::vector < cv::Point2f > points[2]; /* Feature points from img1 */
-  std::vector < uchar > foundPoint;
+  int numpoints = 90;  // 300;
+  std::vector<cv::Point2f> points[2]; /* Feature points from img1 */
+  std::vector<uchar> foundPoint;
   std::vector<float> errors;
   cv::Size sizeWindow(31, 31), pixWinSize(15, 15);
   //CvTermCriteria termCriteria;
@@ -819,14 +766,10 @@ void Viewer::flow(cv::Mat image) {
 
   src.copyTo(image);
   image.copyTo(previous);
-
-  ~img1;
-  ~img2;
-  ~src;
 }
 
 void Viewer::DisplayError() {
-  pthread_mutex_unlock (&mutex_);
+  pthread_mutex_unlock(&mutex_);
   gtk_image_in_->set(Gtk::Stock::MISSING_IMAGE, Gtk::ICON_SIZE_DIALOG);
   main_window_->resize(1, 1);
   while (gtk_main_.events_pending())
@@ -835,9 +778,8 @@ void Viewer::DisplayError() {
 }
 
 void Viewer::Display(cv::Mat image) {
-  cv::Mat image2(image.size(), CV_8UC3);
-  image.copyTo(image2);
-  selection(image2);
+  cv::Mat image2 = image.clone();
+  ApplySelection(image2);
 
   cv::Mat img_mat(image.size(), CV_8UC3);
   image.copyTo(img_mat);
@@ -847,7 +789,7 @@ void Viewer::Display(cv::Mat image) {
 
   imagenO_.create(image.size(), CV_8UC3);
   img_mat.copyTo(imagenO_);
-  pthread_mutex_unlock (&mutex_);
+  pthread_mutex_unlock(&mutex_);
 
   cv::Size img_mat_size = img_mat.size();
   cv::Size imagesize = image.size();
@@ -859,17 +801,15 @@ void Viewer::Display(cv::Mat image) {
   //std::cout << img_mat.type() << std::endl;
   //std::cout << "Lo siguiente es data\n";
   //std::cout << img_mat.data << std::endl;
-  Glib::RefPtr < Gdk::Pixbuf > imgBuff = Gdk::Pixbuf::create_from_data(
+  Glib::RefPtr<Gdk::Pixbuf> imgBuff = Gdk::Pixbuf::create_from_data(
       (const guint8*) img_mat.data, Gdk::COLORSPACE_RGB, false, 8,
-      img_mat_size.width, img_mat_size.height,
-      img_mat.step);
+      img_mat_size.width, img_mat_size.height, img_mat.step);
 
   cv::Size img_mat2_size = img_mat2.size();
 
-  Glib::RefPtr < Gdk::Pixbuf > imgBuff2 = Gdk::Pixbuf::create_from_data(
+  Glib::RefPtr<Gdk::Pixbuf> imgBuff2 = Gdk::Pixbuf::create_from_data(
       (const guint8*) img_mat2.data, Gdk::COLORSPACE_RGB, false, 8,
-      img_mat2_size.width, img_mat2_size.height,
-      img_mat2.step);
+      img_mat2_size.width, img_mat2_size.height, img_mat2.step);
 
   gtk_image_in_->clear();
   gtk_image_in_->set(imgBuff);
@@ -881,94 +821,107 @@ void Viewer::Display(cv::Mat image) {
   while (gtk_main_.events_pending())
     gtk_main_.iteration();
   pthread_mutex_lock(&mutex_);
-  ~imagenO_;
 }
 
-void Viewer::button_pyramid_clicked() {
-  if (pyramid_box_)
-    pyramid_box_ = 0;
-  else
-    pyramid_box_ = 1;
-}
-
-void Viewer::button_conv_clicked() {
-  if (conv_box_)
-    conv_box_ = 0;
-  else
-    conv_box_ = 1;
-}
-
-void Viewer::button_gray_clicked() {
-  if (gray_box_)
-    gray_box_ = 0;
-  else
-    gray_box_ = 1;
-}
-
-void Viewer::button_color_clicked() {
-  if (color_box_)
-    color_box_ = 0;
-  else
-    color_box_ = 1;
-}
-
-void Viewer::button_sobel_clicked() {
-  if (sobel_box_)
-    sobel_box_ = 0;
-  else
-    sobel_box_ = 1;
-}
-
-void Viewer::button_laplace_clicked() {
-  if (laplace_box_)
-    laplace_box_ = 0;
-  else
-    laplace_box_ = 1;
-}
-
-void Viewer::button_default_clicked() {
-  if (def_box_)
+void Viewer::ButtonClicked() {
+  /* If default button is pressed, reset other filters and itself */
+  if (button_default_->get_active()) {
     def_box_ = 0;
-  else
-    def_box_ = 1;
-}
-
-void Viewer::button_canny_clicked() {
-  if (canny_box_)
-    canny_box_ = 0;
-  else
-    canny_box_ = 1;
-}
-
-void Viewer::button_harris_clicked() {
-  if (harris_box_)
-    harris_box_ = 0;
-  else
+    button_default_->set_active(false);
+    button_sobel_->set_active(false);
+    button_laplace_->set_active(false);
+    button_gray_->set_active(false);
+    button_conv_->set_active(false);
+    button_pyramid_->set_active(false);
+    button_color_->set_active(false);
+  } else {
+    def_box_ = 0;
+  }
+  /* If some filter is pressed then default button is unset */
+  if (button_gray_->get_active()) {
+    gray_box_ = 1;
+    button_default_->set_active(false);
+    def_box_ = 0;
+  } else {
+    gray_box_ = 0;
+  }
+  if (button_sobel_->get_active()) {
+    sobel_box_ = 1;
+    button_default_->set_active(false);
+    def_box_ = 0;
+  } else {
+    sobel_box_ = 0;
+  }
+  if (button_laplace_->get_active()) {
+    laplace_box_ = 1;
+    button_default_->set_active(false);
+    def_box_ = 0;
+  } else {
+    laplace_box_ = 0;
+  }
+  if (button_pyramid_->get_active()) {
+    pyramid_box_ = 1;
+    button_default_->set_active(false);
+    def_box_ = 0;
+  } else {
+    pyramid_box_ = 0;
+  }
+  if (button_color_->get_active()) {
+    color_box_ = 1;
+    button_default_->set_active(false);
+    def_box_ = 0;
+  } else {
+    color_box_ = 0;
+  }
+  if (button_conv_->get_active()) {
+    conv_box_ = 1;
+    button_default_->set_active(false);
+    def_box_ = 0;
+  } else {
+    conv_box_ = 0;
+  }
+  /* Feature detection doesn't reset default button */
+  if (button_harris_->get_active()) {
     harris_box_ = 1;
-}
-
-void Viewer::button_hough_clicked() {
-  if (hough_box_)
-    hough_box_ = 0;
-  else
+  } else {
+    harris_box_ = 0;
+  }
+  if (button_canny_->get_active()) {
+    canny_box_ = 1;
+  } else {
+    canny_box_ = 0;
+  }
+  if (button_hough_->get_active()) {
     hough_box_ = 1;
-}
-
-void Viewer::button_flow_clicked() {
-  if (flow_box_)
-    flow_box_ = 0;
-  else
-    flow_box_ = 1;
-}
-
-void Viewer::button_hough_circles_clicked() {
-  if (houghcircles_box_)
-    houghcircles_box_ = 0;
-  else
+  } else {
+    hough_box_ = 0;
+  }
+  if (button_houghcircles_->get_active()) {
     houghcircles_box_ = 1;
+  } else {
+    houghcircles_box_ = 0;
+  }
+  /* Movement detection doesn't reset default button */
+  if (button_flow_->get_active()) {
+    flow_box_ = 1;
+  } else {
+    flow_box_ = 0;
+  }
+  /* If Hough transform and standard algorithm are selected: show more options */
+  if (button_hough_->get_active() && combobox_hough_->get_active_row_number() == 0) {
+    scale_hough_long_->show();
+    scale_hough_gap_->show();
+    label_hough_long_->show();
+    label_hough_gap_->show();
+  } else {
+    scale_hough_long_->hide();
+    scale_hough_gap_->hide();
+    label_hough_long_->hide();
+    label_hough_gap_->hide();
+  }
 }
 
-void Viewer::selection(cv::Mat image) {
+void Viewer::ApplySelection(cv::Mat image) {
 
   bool INFO = true;
 
@@ -977,7 +930,7 @@ void Viewer::selection(cv::Mat image) {
       std::cout << "**************\n";
       std::cout << "LAPLACE\n";
     }
-    laplace(image);
+    Laplace(image);
   }
 
   if (sobel_box_) {
@@ -985,7 +938,7 @@ void Viewer::selection(cv::Mat image) {
       std::cout << "**************\n";
       std::cout << "SOBEL : aperture = " << scale_sobel_->get_value() << "\n";
     }
-    sobel(image);
+    Sobel(image);
   }
 
   if (harris_box_) {
@@ -993,7 +946,7 @@ void Viewer::selection(cv::Mat image) {
       std::cout << "**************\n";
       std::cout << "HARRIS CORNER\n";
     }
-    harris(image);
+    Harris(image);
   }
 
   if (hough_box_) {
@@ -1001,23 +954,23 @@ void Viewer::selection(cv::Mat image) {
       std::cout << "**************\n";
       if (combobox_hough_->get_active_row_number() == 0)
         std::cout << "HOUGH STANDARD : threshold = "
-            << scale_hough_threshold_->get_value() << "\n";
+                  << scale_hough_threshold_->get_value() << "\n";
       else
         std::cout << "HOUGH PROBABILISTIC : threshold = "
-            << scale_sobel_->get_value() << "; length = "
-            << scale_hough_long_->get_value() << "; gap = " << scale_hough_gap_->get_value()
-            << "\n";
+                  << scale_sobel_->get_value() << "; length = "
+                  << scale_hough_long_->get_value() << "; gap = "
+                  << scale_hough_gap_->get_value() << "\n";
     }
-    hough(image);
+    Hough(image);
   }
 
   if (canny_box_) {
     if (INFO) {
       std::cout << "**************\n";
       std::cout << "CANNY FILTER : threshold = " << scale_canny_->get_value()
-          << "\n";
+                << "\n";
     }
-    canny(image);
+    Canny(image);
   }
 
   if (gray_box_) {
@@ -1025,7 +978,7 @@ void Viewer::selection(cv::Mat image) {
       std::cout << "**************\n";
       std::cout << "GRAY\n";
     }
-    gray(image);
+    Gray(image);
   }
 
   if (flow_box_) {
@@ -1033,18 +986,20 @@ void Viewer::selection(cv::Mat image) {
       std::cout << "**************\n";
       std::cout << "OPTICAL FLOW\n";
     }
-    flow(image);
+    OpticalFlow(image);
   }
 
   if (color_box_) {
     if (INFO) {
       std::cout << "**************\n";
-      std::cout << "COLOR FILTER : Hmax =" << scale_h_max_->get_value() << "; Hmin ="
-          << scale_h_min_->get_value() << "; Smaxn =" << scale_s_max_->get_value() << "; Smin ="
-          << scale_s_min_->get_value() << "; Vmax =" << scale_v_max_->get_value() << "; Vmin ="
-          << scale_v_min_->get_value() << "\n";
+      std::cout << "COLOR FILTER : Hmax =" << scale_h_max_->get_value()
+                << "; Hmin =" << scale_h_min_->get_value() << "; Smaxn ="
+                << scale_s_max_->get_value() << "; Smin ="
+                << scale_s_min_->get_value() << "; Vmax ="
+                << scale_v_max_->get_value() << "; Vmin ="
+                << scale_v_min_->get_value() << "\n";
     }
-    color(image);
+    ColorFilter(image);
   }
 
   if (conv_box_) {
@@ -1057,7 +1012,7 @@ void Viewer::selection(cv::Mat image) {
       if (combobox_conv_->get_active_row_number() == 2)
         std::cout << "CONVOLUTION EMBOSSING\n";
     }
-    conv(image);
+    Conv(image);
   }
 
   if (pyramid_box_) {
@@ -1065,7 +1020,7 @@ void Viewer::selection(cv::Mat image) {
       std::cout << "**************\n";
       std::cout << "PYRAMID\n";
     }
-    pyramid(image);
+    Pyramid(image);
   }
 
   if (houghcircles_box_) {
@@ -1073,7 +1028,7 @@ void Viewer::selection(cv::Mat image) {
       std::cout << "**************\n";
       std::cout << "HOUGH CIRCLES\n";
     }
-    hough_circles(image);
+    HoughCircles(image);
   }
 
   if (def_box_) {

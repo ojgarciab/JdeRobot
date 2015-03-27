@@ -47,13 +47,12 @@ class Viewer {
   bool isVisible();
   bool OnClickedEventBox(GdkEventButton* event);
 
-
  private:
 
   Glib::RefPtr<Gnome::Glade::Xml> ref_xml_;
 
-  Gtk::Image* gtk_image_in_;  // input image
-  Gtk::Image* gtk_image_out_;  // output image
+  Gtk::Image* gtk_image_in_; /* GUI input image */
+  Gtk::Image* gtk_image_out_; /* GUI output image */
   Gtk::Window* main_window_;
   Gtk::Main gtk_main_;
 
@@ -61,14 +60,12 @@ class Viewer {
   cv::Mat imagenO_;
   pthread_mutex_t mutex_;
 
-  // Horizontal slidebars
+  /* Horizontal and vertical slidebars */
   Gtk::HScale* scale_sobel_;
   Gtk::HScale* scale_canny_;
   Gtk::HScale* scale_hough_threshold_;
   Gtk::HScale* scale_hough_long_;
   Gtk::HScale* scale_hough_gap_;
-
-  // Vertical slidebars
   Gtk::VScale* scale_h_max_;
   Gtk::VScale* scale_h_min_;
   Gtk::VScale* scale_v_max_;
@@ -76,9 +73,10 @@ class Viewer {
   Gtk::VScale* scale_s_max_;
   Gtk::VScale* scale_s_min_;
 
+  /* Event box that receives mouse click events on GUI input image */
   Gtk::EventBox* eventbox_;
 
-  // Check buttons that implement the filters
+  /* Check buttons that implement the filters */
   Gtk::CheckButton* button_canny_;
   Gtk::CheckButton* button_sobel_;
   Gtk::CheckButton* button_laplace_;
@@ -92,54 +90,44 @@ class Viewer {
   Gtk::CheckButton* button_color_;
   Gtk::CheckButton* button_houghcircles_;
 
-  // Selection of Method
+  /* Combo boxes that make method selection */
   Gtk::ComboBox* combobox_hough_;
   Gtk::ComboBox* combobox_conv_;
 
-  // Labels
-  Gtk::Label* label_long_;
-  Gtk::Label* label_gap_;
+  /* Text labels */
+  Gtk::Label* label_hough_long_;
+  Gtk::Label* label_hough_gap_;
 
+  /* Filters and feature detectors */
+  void ApplySelection(cv::Mat image);
+  void Canny(cv::Mat image);
+  void Sobel(cv::Mat image);
+  void Laplace(cv::Mat image);
+  void Hough(cv::Mat image);
+  void HoughCircles(cv::Mat image);
+  void Harris(cv::Mat image);
+  void Gray(cv::Mat image);
+  void OpticalFlow(cv::Mat image);
+  void ColorFilter(cv::Mat image);
+  void Conv(cv::Mat image);
+  void Pyramid(cv::Mat image);
+  int CheckHsvValues(double H, double S, double V);
 
-  //Filters and Feature detectors
-  void selection(cv::Mat image);
-  void canny(cv::Mat image);
-  void sobel(cv::Mat image);
-  void laplace(cv::Mat image);
-  void hough(cv::Mat image);
-  void hough_circles(cv::Mat image);
-  void harris(cv::Mat image);
-  void gray(cv::Mat image);
-  void flow(cv::Mat image);
-  void color(cv::Mat image);
-  void conv(cv::Mat image);
-  void pyramid(cv::Mat image);
-  int valuesOK(double H, double S, double V);
+  /* RGB to HSV converters */
+  double GetH(double r, double g, double b);
+  double GetS(double r, double g, double b);
+  double GetV(double r, double g, double b);
 
-  double getH(double r, double g, double b);
-  double getS(double r, double g, double b);
-  double getV(double r, double g, double b);
+  /* Event listener: called when some button has been clicked or Hough algorithm combo has changed */
+  void ButtonClicked();
 
-  //Checks if the button has been clicked
-  void button_canny_clicked();
-  void button_sobel_clicked();
-  void button_laplace_clicked();
-  void button_hough_clicked();
-  void button_hough_circles_clicked();
-  void button_harris_clicked();
-  void button_default_clicked();
-  void button_gray_clicked();
-  void button_flow_clicked();
-  void button_color_clicked();
-  void button_conv_clicked();
-  void button_pyramid_clicked();
-
-  // Checkbox control
+  /* Checkbox control variables */
   int canny_box_;
   int sobel_box_;
   int laplace_box_;
   int harris_box_;
   int hough_box_;
+  int hough_combo_;
   int houghcircles_box_;
   int def_box_;
   int gray_box_;
