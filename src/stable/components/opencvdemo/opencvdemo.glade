@@ -246,8 +246,12 @@
                                                         <property name="visible">True</property>
                                                         <property name="editing_canceled">True</property>
                                                         <property name="items" translatable="yes">Sharpening
+Sharpening*
 Gaussian Blur
 Embossing
+Embossing*
+Edge Detector
+Edge Detector*
 </property>
                                                       </widget>
                                                       <packing>

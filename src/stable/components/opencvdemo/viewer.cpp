@@ -125,6 +125,10 @@ Viewer::Viewer()
 Viewer::~Viewer() {
 }
 
+/**
+ * Get GUI visibility.
+ * @return  true if it is visible, false if not.
+ */
 bool Viewer::isVisible() {
   return main_window_->is_visible();
 }
@@ -197,7 +201,8 @@ bool Viewer::OnClickedEventBox(GdkEventButton* event) {
     bmax = bmin;
     scale_v_max_->set_value(bmax);
   }
-  std::cout << "Mouse click on: X=" << event->x << ", Y=" << event->y << std::endl;
+  std::cout << "Mouse click on: X=" << event->x << ", Y=" << event->y
+            << std::endl;
   return true;
 }
 
@@ -223,7 +228,7 @@ void Viewer::Laplace(cv::Mat image) {
   /* Apply Laplace operator:
    * http://docs.opencv.org/modules/imgproc/doc/filtering.html#laplacian */
   cv::Laplacian(working_copy, working_copy, working_copy.depth(), aperture);
-  /* Prescale values, get absolute value, and apply alpha 1 and beta 0 */
+  /* Prescale values, get absolute value and apply alpha 1 and beta 0 */
   cv::convertScaleAbs(working_copy, working_copy);
   /* Convert result image back to RGB8 */
   cv::cvtColor(working_copy, image, CV_GRAY2RGB);
@@ -353,115 +358,80 @@ void Viewer::ColorFilter(cv::Mat image) {
   cvResultado.copyTo(image);
 }
 
+/**
+ * Convolution.
+ * @param image Input/output frame
+ * @see <a href="http://docs.opencv.org/doc/tutorials/imgproc/imgtrans/filter_2d/filter_2d.html">Making your own linear filters!</a>
+ */
 void Viewer::Conv(cv::Mat image) {
+  cv::Mat mask;
 
-  int sizekernel;
-  int offset;
-  int modulo;
-  float* kernel;
+  /* We set default positive and negative sums */
+  double negative = 0, positive = 0;
 
-  int effect = combobox_conv_->get_active_row_number();
-
-  if (effect == 0) {            //sharpenning
-
-    sizekernel = 3;
-    offset = 1;
-    modulo = 0;
-    kernel = (float *) malloc(sizeof(float) * sizekernel * sizekernel);
-    memset(kernel, 0, sizeof(float) * sizekernel * sizekernel);
-    kernel = (float *) malloc(sizeof(float) * 3 * 3);
-
-    kernel[0] = 0;
-    kernel[1] = -1;
-    kernel[2] = 0;
-    kernel[3] = -1;
-    kernel[4] = 5;
-    kernel[5] = -1;
-    kernel[6] = 0;
-    kernel[7] = -1;
-    kernel[8] = 0;
-  } else {
-    if (effect == 1) {            //Gaussian Blur
-      sizekernel = 3;
-      offset = 5;
-      modulo = 0;
-      kernel = (float *) malloc(sizeof(float) * sizekernel * sizekernel);
-      memset(kernel, 0, sizeof(float) * sizekernel * sizekernel);
-      kernel = (float *) malloc(sizeof(float) * 3 * 3);
-
-      kernel[0] = 0;
-      kernel[1] = 1;
-      kernel[2] = 0;
-      kernel[3] = 1;
-      kernel[4] = 1;
-      kernel[5] = 1;
-      kernel[6] = 0;
-      kernel[7] = 1;
-      kernel[8] = 0;
-
-    } else {
-      if (effect == 2) {            // Embossing
-        sizekernel = 3;
-        offset = 1;
-        modulo = 0;
-        kernel = (float *) malloc(sizeof(float) * sizekernel * sizekernel);
-        memset(kernel, 0, sizeof(float) * sizekernel * sizekernel);
-        kernel = (float *) malloc(sizeof(float) * 3 * 3);
-
-        kernel[0] = -2;
-        kernel[1] = -1;
-        kernel[2] = 0;
-        kernel[3] = -1;
-        kernel[4] = 1;
-        kernel[5] = 1;
-        kernel[6] = 0;
-        kernel[7] = 1;
-        kernel[8] = 2;
-        /*  }else{
-         if (effect==3){// Edge Detection
-         sizekernel=3;
-         offset=1;
-         modulo=128;
-         kernel=(float *)malloc(sizeof(float)*sizekernel*sizekernel);
-         memset(kernel, 0, sizeof(float)*sizekernel*sizekernel);
-         kernel=(float *)malloc(sizeof(float)*3*3);
-         kernel[0]=0;kernel[1]=-1;kernel[2]=0;
-         kernel[3]=-1;kernel[4]=4;kernel[5]=-1;
-         kernel[6]=0;kernel[7]=-1;  kernel[8]=0;    
-         }*/
+  /* Get effect selected in combo box */
+  switch (combobox_conv_->get_active_row_number()) {
+    case 0: /* Sharpenning with forzed 1:1 scale (color will saturate) */
+      negative = 0;
+      positive = 1;
+    case 1: /* Sharpenning with maximum and minimum range adapted to 0..255 */
+      mask = (cv::Mat_<float>(3, 3) <<
+      /**/0, -1, 0,
+      /**/-1, 5, -1,
+      /**/0, -1, 0);
+      break;
+    case 2: /* Gaussian Blur */
+      mask = (cv::Mat_<float>(3, 3) <<
+      /**/0, 1, 0,
+      /**/1, 1, 1,
+      /**/0, 1, 0);
+      break;
+    case 3: /* Embossing with forzed 1:1 scale (color will saturate) */
+      negative = 0;
+      positive = 1;
+    case 4: /* Embossing with maximum and minimum range adapted to 0..255 */
+      mask = (cv::Mat_<float>(3, 3) <<
+      /**/-2, -1, 0,
+      /**/-1, 1, 1,
+      /**/0, 1, 2);
+      break;
+    case 5: /* Edge Detector with forzed color saturatation */
+      negative = -0.25;
+      positive = 0.25;
+    case 6: /* Edge Detector with maximum and minimum range adapted to 0..255 */
+      mask = (cv::Mat_<float>(3, 3) <<
+      /**/0, -1, 0,
+      /**/-1, 4, -1,
+      /**/0, -1, 0);
+      break;
+  }
+  /* If range was not forced, calculate it */
+  if ((positive == 0) && (negative == 0)) {
+    /* Calculate maximum and minimum values to adjust offset and scale */
+    for (int i = 0; i < mask.rows; i++) {
+      for (int j = 0; j < mask.cols; j++) {
+        if (mask.at<float>(i, j) > 0) {
+          positive += mask.at<float>(i, j);
+        } else {
+          negative -= mask.at<float>(i, j);
+        }
       }
     }
   }
 
-  //CvMat *mask;
-  cv::Mat src;
-  image.copyTo(src);
-  int i, h, w;
-  int elems = sizekernel * sizekernel;
-
-  cv::Mat tmp(src.size(), CV_8UC3);
-  cv::Mat dst(src.size(), CV_8UC1);
-  cv::Mat mask(sizekernel, sizekernel, CV_32FC1);
-  /* Save mask in CvMat format*/
-  for (i = 0; i < elems; i++) {
-    h = i / sizekernel;
-    w = i % sizekernel;
-
-    if (modulo > 1)
-      mask.at<float>(h, w) = kernel[i] / modulo;
-    else
-      mask.at<float>(h, w) = kernel[i];
+  /* Normalize difference between negative and negative (range) to 1 (0..255) */
+  float range = positive + negative;
+  if (range != 0.0F) {
+    mask = mask / range;
   }
+  /* Get a working copy of input image */
+  cv::Mat working_image = image.clone();
 
-  if (offset != 0) {
-    filter2D(src, tmp, -1, mask, cv::Point(-1, -1));
-    add(tmp, cv::Scalar(offset, offset, offset, offset), dst);
-
-  } else {
-    filter2D(src, dst, -1, mask, cv::Point(-1, -1));
-  }
-
-  dst.copyTo(image);
+  int ddepth = -1; /* Same pixel format as source */
+  cv::Point anchor = cv::Point(-1, -1); /* Center anchor */
+  /* Apply selected filter to working image and output it to image cv::Mat
+   * http://docs.opencv.org/modules/imgproc/doc/filtering.html#filter2d */
+  filter2D(working_image, image, ddepth, mask, anchor, negative);
 }
 
 void Viewer::Pyramid(cv::Mat image) {
@@ -573,7 +543,8 @@ void Viewer::Canny(cv::Mat image) {
     aperture = 3;
   }
   double threshold = scale_canny_->get_value();
-  std::cout << "Threshold1: " << threshold << ", Threshold2: " << (threshold * 3) << ", Sobel aperture: " << aperture << std::endl;
+  std::cout << "Threshold1: " << threshold << ", Threshold2: "
+            << (threshold * 3) << ", Sobel aperture: " << aperture << std::endl;
 
   /* Get a working copy of input image */
   cv::Mat working_copy = image.clone();
@@ -827,7 +798,7 @@ void Viewer::Display(cv::Mat image) {
   gtk_image_in_->clear();
   gtk_image_in_->set(gtk_input_image);
 
-  /* Update input image in GUI */
+  /* Update output image in GUI */
   gtk_image_out_->clear();
   gtk_image_out_->set(gtk_output_image);
 
@@ -927,7 +898,8 @@ void Viewer::ButtonClicked() {
     flow_box_ = 0;
   }
   /* If Hough transform and standard algorithm are selected: show more options */
-  if (button_hough_->get_active() && combobox_hough_->get_active_row_number() == 0) {
+  if (button_hough_->get_active()
+      && combobox_hough_->get_active_row_number() == 0) {
     scale_hough_long_->show();
     scale_hough_gap_->show();
     label_hough_long_->show();
@@ -944,12 +916,12 @@ void Viewer::ApplySelection(cv::Mat image) {
 
   bool INFO = true;
 
-  if (laplace_box_) {
+  if (gray_box_) {
     if (INFO) {
       std::cout << "**************\n";
-      std::cout << "LAPLACE\n";
+      std::cout << "GRAY\n";
     }
-    Laplace(image);
+    Gray(image);
   }
 
   if (sobel_box_) {
@@ -960,12 +932,50 @@ void Viewer::ApplySelection(cv::Mat image) {
     Sobel(image);
   }
 
+  if (laplace_box_) {
+    if (INFO) {
+      std::cout << "**************\n";
+      std::cout << "LAPLACE\n";
+    }
+    Laplace(image);
+  }
+
+  /* Convolution filter before color filter to enhance it */
+  if (conv_box_) {
+    if (INFO) {
+      std::cout << "**************\n";
+    }
+    Conv(image);
+  }
+
+  if (color_box_) {
+    if (INFO) {
+      std::cout << "**************\n";
+      std::cout << "COLOR FILTER : Hmax =" << scale_h_max_->get_value()
+                << "; Hmin =" << scale_h_min_->get_value() << "; Smaxn ="
+                << scale_s_max_->get_value() << "; Smin ="
+                << scale_s_min_->get_value() << "; Vmax ="
+                << scale_v_max_->get_value() << "; Vmin ="
+                << scale_v_min_->get_value() << "\n";
+    }
+    ColorFilter(image);
+  }
+
   if (harris_box_) {
     if (INFO) {
       std::cout << "**************\n";
       std::cout << "HARRIS CORNER\n";
     }
     Harris(image);
+  }
+
+  if (canny_box_) {
+    if (INFO) {
+      std::cout << "**************\n";
+      std::cout << "CANNY FILTER : threshold = " << scale_canny_->get_value()
+                << "\n";
+    }
+    Canny(image);
   }
 
   if (hough_box_) {
@@ -983,21 +993,12 @@ void Viewer::ApplySelection(cv::Mat image) {
     Hough(image);
   }
 
-  if (canny_box_) {
+  if (houghcircles_box_) {
     if (INFO) {
       std::cout << "**************\n";
-      std::cout << "CANNY FILTER : threshold = " << scale_canny_->get_value()
-                << "\n";
+      std::cout << "HOUGH CIRCLES\n";
     }
-    Canny(image);
-  }
-
-  if (gray_box_) {
-    if (INFO) {
-      std::cout << "**************\n";
-      std::cout << "GRAY\n";
-    }
-    Gray(image);
+    HoughCircles(image);
   }
 
   if (flow_box_) {
@@ -1008,50 +1009,13 @@ void Viewer::ApplySelection(cv::Mat image) {
     OpticalFlow(image);
   }
 
-  if (color_box_) {
-    if (INFO) {
-      std::cout << "**************\n";
-      std::cout << "COLOR FILTER : Hmax =" << scale_h_max_->get_value()
-                << "; Hmin =" << scale_h_min_->get_value() << "; Smaxn ="
-                << scale_s_max_->get_value() << "; Smin ="
-                << scale_s_min_->get_value() << "; Vmax ="
-                << scale_v_max_->get_value() << "; Vmin ="
-                << scale_v_min_->get_value() << "\n";
-    }
-    ColorFilter(image);
-  }
-
-  if (conv_box_) {
-    if (INFO) {
-      std::cout << "**************\n";
-      if (combobox_conv_->get_active_row_number() == 0)
-        std::cout << "CONVOLUTION SHARPENING\n";
-      if (combobox_conv_->get_active_row_number() == 1)
-        std::cout << "CONVOLUTION GAUSSIAN BLUR\n";
-      if (combobox_conv_->get_active_row_number() == 2)
-        std::cout << "CONVOLUTION EMBOSSING\n";
-    }
-    Conv(image);
-  }
-
+  /* Last filter: pyramid */
   if (pyramid_box_) {
     if (INFO) {
       std::cout << "**************\n";
       std::cout << "PYRAMID\n";
     }
     Pyramid(image);
-  }
-
-  if (houghcircles_box_) {
-    if (INFO) {
-      std::cout << "**************\n";
-      std::cout << "HOUGH CIRCLES\n";
-    }
-    HoughCircles(image);
-  }
-
-  if (def_box_) {
-
   }
 }
 
