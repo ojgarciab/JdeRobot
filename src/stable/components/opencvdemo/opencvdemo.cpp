@@ -28,6 +28,7 @@
 #include "viewer.h"
 
 static std::string supported_format_rgb8("RGB8");
+static std::string supported_format_nv21("NV21");
 
 int main(int argc, char** argv) {
   opencvdemo::Viewer viewer;
@@ -67,9 +68,11 @@ int main(int argc, char** argv) {
       /* Get next frame */
       image_data = camera_proxy->getImageData();
     } catch (const Ice::Exception& ex) {
-      /* Show an error in stderr, show a error icon and wait 250ms before try again */
+      /* Show an error in stderr */
       std::cerr << "ICE error: " << ex << std::endl;
+      /* Show the default "Missing Image" icon instead input image */
       viewer.DisplayError();
+      /* Wait 250ms before trying again */
       usleep(250000);
       continue;
     }
@@ -81,11 +84,23 @@ int main(int argc, char** argv) {
     if (!format_string)
       throw "Format not supported";
 
-    /* Check if format is supported by us (else we need to convert to RGB8) */
+    /* Check if format is supported by our application (else we need to convert to RGB8) */
     if (supported_format_rgb8.compare(image_data->description->format) == 0) {
+      /* Create a OpenCV Mat from RGB8 data (8 bits per pixel) received */
       image = cv::Mat(image_data->description->height,
                       image_data->description->width, CV_8UC3,
                       &(image_data->pixelData[0]));
+    } else if (supported_format_nv21.compare(image_data->description->format)
+        == 0) {
+      /* Convert Android's NV21 image format in GTK compatible format */
+      //colorspaces::ImageNV21::
+      image = colorspaces::Image(image_data->description->width,
+                                 image_data->description->height, "NV21",
+                                 &(image_data->pixelData[0]));
+      /* Create a OpenCV Mat from RGB8 data (8 bits per pixel) received */
+/*      image = cv::Mat(image_data->description->height,
+                      image_data->description->width, CV_8UC3,
+                      &(image_data->pixelData[0]));*/
     } else {
       throw "Format not implemented";
     }
