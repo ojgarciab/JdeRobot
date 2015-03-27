@@ -36,6 +36,9 @@
 
 namespace opencvdemo {
 
+/**
+ *  Gtk+ GUI class
+ */
 class Viewer {
  public:
   Viewer();
@@ -45,7 +48,6 @@ class Viewer {
   void DisplayError();
   void Display(cv::Mat image);
   bool isVisible();
-  bool OnClickedEventBox(GdkEventButton* event);
 
  private:
 
@@ -57,7 +59,7 @@ class Viewer {
   Gtk::Main gtk_main_;
 
   //IplImage* imagenO;
-  cv::Mat imagenO_;
+  cv::Mat previous_image_;
   pthread_mutex_t mutex_;
 
   /* Horizontal and vertical slidebars */
@@ -118,8 +120,9 @@ class Viewer {
   double GetS(double r, double g, double b);
   double GetV(double r, double g, double b);
 
-  /* Event listener: called when some button has been clicked or Hough algorithm combo has changed */
+  /* Event listeners: button or combo changed or input image clicked */
   void ButtonClicked();
+  bool OnClickedEventBox(GdkEventButton* event);
 
   /* Checkbox control variables */
   int canny_box_;

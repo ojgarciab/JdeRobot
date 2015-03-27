@@ -27,9 +27,6 @@
 #include <visionlib/colorspaces/colorspacesmm.h>
 #include "viewer.h"
 
-static std::string supported_format_rgb8("RGB8");
-static std::string supported_format_nv21("NV21");
-
 int main(int argc, char** argv) {
   opencvdemo::Viewer viewer;
   Ice::CommunicatorPtr ice_communicator;
@@ -86,11 +83,13 @@ int main(int argc, char** argv) {
     if (!format_string)
       throw "Format not supported";
 
-    std::cerr << image_data->pixelData[0] << std::endl;
+    /* Get image with same format as origin */
     colorspaces::Image frame(image_data->description->width,
                              image_data->description->height, format_string,
                              &(image_data->pixelData[0]));
+    /* Conversion to RGB8 will happen only if needed */
     colorspaces::ImageRGB8 frame_rgb8(frame);
+    /* Convert old OpenCV image container, IplImage, to newer cv::Mat */
     image = cv::Mat(frame_rgb8);
 
     /* Display and process input image */

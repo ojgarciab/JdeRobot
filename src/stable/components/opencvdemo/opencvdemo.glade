@@ -306,7 +306,7 @@ Embossing
                                             <property name="visible">True</property>
                                             <child>
                                               <widget class="GtkCheckButton" id="button_harris">
-                                                <property name="label" translatable="yes">Harris Corners</property>
+                                                <property name="label" translatable="yes">Harris Corners (uses Sobel)</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
                                                 <property name="receives_default">False</property>
@@ -319,7 +319,7 @@ Embossing
                                             </child>
                                             <child>
                                               <widget class="GtkCheckButton" id="button_canny">
-                                                <property name="label" translatable="yes">Canny Edge Detector</property>
+                                                <property name="label" translatable="yes">Canny Edge Detector (uses Sobel)</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
                                                 <property name="receives_default">False</property>
@@ -552,7 +552,7 @@ Probabilistic</property>
                                 <child>
                                   <widget class="GtkLabel" id="label3">
                                     <property name="visible">True</property>
-                                    <property name="label" translatable="yes">Sobel Aperture</property>
+                                    <property name="label" translatable="yes">Sobel/Laplace Aperture</property>
                                   </widget>
                                   <packing>
                                     <property name="position">0</property>

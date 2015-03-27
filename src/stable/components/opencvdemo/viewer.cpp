@@ -35,24 +35,14 @@ namespace opencvdemo {
 const std::string kGladePath = std::string("./opencvdemo.glade");
 
 int opflow_first = 1;
-cv::Mat previous;
 
+/**
+ * Constructor.
+ * Load glade GUI from xml, initialize references to widgets (buttons, combo
+ * boxes, images) and event handlers.
+ */
 Viewer::Viewer()
     : gtk_main_(0, 0) {
-  /* Initialize all private checkbox controls */
-  canny_box_ = 0;
-  sobel_box_ = 0;
-  laplace_box_ = 0;
-  harris_box_ = 0;
-  hough_box_ = 0;
-  def_box_ = 1;
-  gray_box_ = 0;
-  flow_box_ = 0;
-  color_box_ = 0;
-  conv_box_ = 0;
-  pyramid_box_ = 0;
-  houghcircles_box_ = 0;
-
   /* Load glade GUI from XML file */
   std::cout << "Loading glade" << std::endl;
   ref_xml_ = Gnome::Glade::Xml::create(kGladePath);
@@ -121,15 +111,12 @@ Viewer::Viewer()
   eventbox_->signal_button_press_event().connect(
       sigc::mem_fun(this, &Viewer::OnClickedEventBox));
 
-  /* Set to invisible some elements at start */
-  scale_hough_long_->hide();
-  scale_hough_gap_->hide();
-  label_hough_long_->hide();
-  label_hough_gap_->hide();
-
   /* Set default element to first one */
   combobox_hough_->set_active(0);
   combobox_conv_->set_active(0);
+
+  /* Initialize all private checkbox controls simulating an update */
+  ButtonClicked();
 
   pthread_mutex_init(&mutex_, NULL);
   pthread_mutex_lock(&mutex_);
@@ -142,8 +129,8 @@ bool Viewer::isVisible() {
   return main_window_->is_visible();
 }
 
-bool Viewer::OnClickedEventBox(GdkEventButton * event) {
-  cv::Mat hsvimage(imagenO_.size(), CV_8UC1);
+bool Viewer::OnClickedEventBox(GdkEventButton* event) {
+  cv::Mat hsvimage(previous_image_.size(), CV_8UC1);
   int posX;
   int posY;
   double r, g, b;
@@ -155,9 +142,9 @@ bool Viewer::OnClickedEventBox(GdkEventButton * event) {
 
   pthread_mutex_lock(&mutex_);
 
-  indice = posY * imagenO_.step + posX * imagenO_.channels();
+  indice = posY * previous_image_.step + posX * previous_image_.channels();
 
-  imagenO_.copyTo(hsvimage);
+  previous_image_.copyTo(hsvimage);
   r = (float) (unsigned int) (unsigned char) hsvimage.data[indice];
   g = (float) (unsigned int) (unsigned char) hsvimage.data[indice + 1];
   b = (float) (unsigned int) (unsigned char) hsvimage.data[indice + 2];
@@ -210,28 +197,36 @@ bool Viewer::OnClickedEventBox(GdkEventButton * event) {
     bmax = bmin;
     scale_v_max_->set_value(bmax);
   }
-  std::cout << event->x << " " << event->y << std::endl;
+  std::cout << "Mouse click on: X=" << event->x << ", Y=" << event->y << std::endl;
   return true;
 }
 
+/**
+ * Laplace operator.
+ * @param image Input/output frame
+ * @see <a href="http://docs.opencv.org/doc/tutorials/imgproc/imgtrans/laplace_operator/laplace_operator.html">Laplace Operator</a>
+ */
 void Viewer::Laplace(cv::Mat image) {
-
+  /* Aperture size used to compute the second-derivative filters.
+   * The size must be positive and odd. */
   int aperture = scale_sobel_->get_value();
   if (aperture % 2 == 0) {
     aperture++;
   }
-  cv::Mat src;
-  image.copyTo(src);
-  cv::Mat gray(image.size(), CV_8UC1);
-  cv::Mat dst(image.size(), CV_16SC1);
-  cv::Mat gaux(image.size(), CV_8UC1);
+  std::cout << "Laplace aperture: " << aperture << std::endl;
 
-  std::cout << aperture << std::endl;
-  cv::cvtColor(src, gray, CV_RGB2GRAY);
-  Laplacian(gray, dst, gray.depth(), aperture);
-  ////dst.convertTo(gaux, -1, 1, 0);
-  convertScaleAbs(dst, gaux);
-  cv::cvtColor(gaux, image, CV_GRAY2RGB);
+  /* Get a working copy of input image */
+  cv::Mat working_copy = image.clone();
+
+  /* Convert working copy to grey scale */
+  cv::cvtColor(working_copy, working_copy, CV_RGB2GRAY);
+  /* Apply Laplace operator:
+   * http://docs.opencv.org/modules/imgproc/doc/filtering.html#laplacian */
+  cv::Laplacian(working_copy, working_copy, working_copy.depth(), aperture);
+  /* Prescale values, get absolute value, and apply alpha 1 and beta 0 */
+  cv::convertScaleAbs(working_copy, working_copy);
+  /* Convert result image back to RGB8 */
+  cv::cvtColor(working_copy, image, CV_GRAY2RGB);
 }
 
 int Viewer::CheckHsvValues(double H, double S, double V) {
@@ -348,9 +343,6 @@ void Viewer::ColorFilter(cv::Mat image) {
         && scale_h_min_->get_value() <= h * DEGTORAD
         && scale_s_max_->get_value() >= s && scale_s_min_->get_value() <= s
         && scale_v_max_->get_value() >= v && scale_v_min_->get_value() <= v) {
-      //hsv->imageData[i*3]   = hsv->imageData[i*3];
-      //hsv->imageData[i*3+1] = hsv->imageData[i*3+1];
-      //hsv->imageData[i*3+2] = hsv->imageData[i*3+2];
     } else {
       /* Gray Scale */
       cvResultado.data[i * 3] = 0;  //(unsigned char) (v*100/255);
@@ -525,61 +517,89 @@ void Viewer::Pyramid(cv::Mat image) {
   dst.copyTo(image);
 }
 
+/**
+ * Sobel Derivatives.
+ * @param image Input/output frame
+ * @see <a href="http://docs.opencv.org/doc/tutorials/imgproc/imgtrans/sobel_derivatives/sobel_derivatives.html">Sobel Derivatives</a>
+ */
 void Viewer::Sobel(cv::Mat image) {
-
+  /* Size of the extended Sobel kernel: it must be 1, 3, 5 or 7 */
   int aperture = scale_sobel_->get_value();
   if (aperture % 2 == 0) {
     aperture++;
   }
-  cv::Mat src;
-  image.copyTo(src);
-
-  cv::Mat gray(image.size(), CV_8UC1);
-  cv::Mat dst(image.size(), CV_16SC1);
-  cv::Mat gaux(image.size(), CV_8UC1);
-
-  cv::cvtColor(src, gray, CV_RGB2GRAY);
-  cv::Sobel(gray, dst, dst.depth(), 0, 1, aperture);
-  dst.convertTo(gaux, gaux.type(), 1, 0);
-  cv::cvtColor(gaux, src, CV_GRAY2RGB);
-
-  src.copyTo(image);
-}
-
-void Viewer::Canny(cv::Mat image) {
-
-  int aperture = scale_sobel_->get_value();
-  if (aperture % 2 == 0) {
-    aperture++;
-  }
-  if (aperture < 3)
-    aperture = 3;
-  else if (aperture > 7)
+  if (aperture > 7) {
     aperture = 7;
-  cv::Mat src;
-  image.copyTo(src);
+  }
+  std::cout << "Sobel aperture: " << aperture << std::endl;
 
-  cv::Mat gray(image.size(), CV_8UC1);
-  cv::Mat dst(image.size(), CV_8UC1);
+  /* Get a working copy of input image */
+  cv::Mat working_copy = image.clone();
 
-  cv::cvtColor(src, gray, CV_RGB2GRAY);
-  cv::Canny(gray, dst, scale_canny_->get_value(), scale_canny_->get_value() * 3,
-            aperture);
-  cv::cvtColor(dst, src, CV_GRAY2RGB);
+  /* Define images for X and Y gradients */
+  cv::Mat gradient_x, gradient_y;
 
-  src.copyTo(image);
+  /* Convert working copy to grey scale */
+  cv::cvtColor(working_copy, working_copy, CV_RGB2GRAY);
+  /* Get gradient X using Sobel derivative:
+   * http://docs.opencv.org/modules/imgproc/doc/filtering.html#sobel */
+  cv::Sobel(working_copy, gradient_x, working_copy.depth(), 1, 0, aperture);
+  /* Prescale every value and get absolute value with alpha 1 and beta 0 */
+  cv::convertScaleAbs(gradient_x, gradient_x);
+  /* Get gradient Y using Sobel derivative */
+  cv::Sobel(working_copy, gradient_y, working_copy.depth(), 0, 1, aperture);
+  /* Prescale every value and get absolute value with alpha 1 and beta 0 */
+  cv::convertScaleAbs(gradient_y, gradient_y);
+  /* Mix both gradients with same weigth (50%-50%) in working copy */
+  cv::addWeighted(gradient_y, 0.5, gradient_y, 0.5, 0, working_copy);
+  /* Copy back processed image converted to RGB8 */
+  cv::cvtColor(working_copy, image, CV_GRAY2RGB);
 }
 
+/**
+ * Canny Edge Detector.
+ * @param image Input/output frame
+ * @see <a href="http://docs.opencv.org/doc/tutorials/imgproc/imgtrans/canny_detector/canny_detector.html">Canny Edge Detector</a>
+ */
+void Viewer::Canny(cv::Mat image) {
+  /* Aperture size for internal Sobel operator: it must be 3, 5 or 7 */
+  int aperture = scale_sobel_->get_value();
+  if (aperture % 2 == 0) {
+    aperture++;
+  }
+  if (aperture > 7) {
+    aperture = 7;
+  } else if (aperture < 3) {
+    aperture = 3;
+  }
+  double threshold = scale_canny_->get_value();
+  std::cout << "Threshold1: " << threshold << ", Threshold2: " << (threshold * 3) << ", Sobel aperture: " << aperture << std::endl;
+
+  /* Get a working copy of input image */
+  cv::Mat working_copy = image.clone();
+
+  /* Convert working copy to grey scale */
+  cv::cvtColor(working_copy, working_copy, CV_RGB2GRAY);
+  /* Apply Canny Edge Detector:
+   * http://docs.opencv.org/modules/imgproc/doc/feature_detection.html?highlight=canny#canny */
+  cv::Canny(working_copy, working_copy, threshold, threshold * 3, aperture);
+  /* Convert result image back to RGB8 */
+  cv::cvtColor(working_copy, image, CV_GRAY2RGB);
+}
+
+/**
+ * Transform an image from BGR to gray scale format by using cvtColor.
+ * @param image Input/output frame
+ * @see <a href="http://docs.opencv.org/doc/tutorials/introduction/load_save_image/load_save_image.html">BGR to Grayscale</a>
+ */
 void Viewer::Gray(cv::Mat image) {
-  cv::Mat src;
-  image.copyTo(src);
+  /* Get a working copy of input image */
+  cv::Mat working_copy = image.clone();
 
-  cv::Mat gray(image.size(), CV_8UC1);
-  cv::Mat dst(image.size(), CV_8UC1);
-  cv::cvtColor(src, gray, CV_RGB2GRAY);
-  cv::cvtColor(gray, src, CV_GRAY2RGB);
-
-  src.copyTo(image);
+  /* Convert working copy to grey scale */
+  cv::cvtColor(image, working_copy, CV_RGB2GRAY);
+  /* Convert result image back to RGB8 (still looking grey scale) */
+  cv::cvtColor(working_copy, image, CV_GRAY2RGB);
 }
 
 void Viewer::Harris(cv::Mat image) {
@@ -693,11 +713,8 @@ void Viewer::OpticalFlow(cv::Mat image) {
   image.copyTo(src);
 
   if (opflow_first) {
-    if (previous.empty())
-      previous.create(image.size(), CV_8UC3);
-    src.copyTo(previous);
-    opflow_first = 0;
-    return;
+    if (previous_image_.empty())
+      return;
   }
   /* Images with feature points */
   cv::Mat img1(image.size(), CV_8UC1);
@@ -707,7 +724,7 @@ void Viewer::OpticalFlow(cv::Mat image) {
       CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, .03);
 
   /*Temp images for algorithms*/
-  cv::cvtColor(previous, img1, CV_RGB2GRAY);
+  cv::cvtColor(previous_image_, img1, CV_RGB2GRAY);
   cv::cvtColor(src, img2, CV_RGB2GRAY);
 
   int i;
@@ -765,9 +782,11 @@ void Viewer::OpticalFlow(cv::Mat image) {
   }
 
   src.copyTo(image);
-  image.copyTo(previous);
 }
 
+/**
+ * Display error image in GUI.
+ */
 void Viewer::DisplayError() {
   pthread_mutex_unlock(&mutex_);
   gtk_image_in_->set(Gtk::Stock::MISSING_IMAGE, Gtk::ICON_SIZE_DIALOG);
@@ -777,52 +796,52 @@ void Viewer::DisplayError() {
   pthread_mutex_lock(&mutex_);
 }
 
+/**
+ * Display input image, process it and display it too in GUI.
+ * @param image Input frame to be processed
+ */
 void Viewer::Display(cv::Mat image) {
-  cv::Mat image2 = image.clone();
-  ApplySelection(image2);
+  /* Get a copy of input image and apply on it user selection */
+  cv::Mat output_image = image.clone();
+  ApplySelection(output_image);
 
-  cv::Mat img_mat(image.size(), CV_8UC3);
-  image.copyTo(img_mat);
+  /* Get a copy of this frame, will be previous one next time */
+  previous_image_ = image.clone();
 
-  cv::Mat img_mat2(image2.size(), CV_8UC3);
-  image2.copyTo(img_mat2);
-
-  imagenO_.create(image.size(), CV_8UC3);
-  img_mat.copyTo(imagenO_);
   pthread_mutex_unlock(&mutex_);
 
-  cv::Size img_mat_size = img_mat.size();
-  cv::Size imagesize = image.size();
+  /* Both images (input and output) remain the same size */
+  cv::Size image_size = image.size();
 
-  //std::cout << img_mat_size.height << std::endl;
-  //std::cout << img_mat_size.width << std::endl;
-  //std::cout << imagesize.height << std::endl;
-  //std::cout << imagesize.width << std::endl;
-  //std::cout << img_mat.type() << std::endl;
-  //std::cout << "Lo siguiente es data\n";
-  //std::cout << img_mat.data << std::endl;
-  Glib::RefPtr<Gdk::Pixbuf> imgBuff = Gdk::Pixbuf::create_from_data(
-      (const guint8*) img_mat.data, Gdk::COLORSPACE_RGB, false, 8,
-      img_mat_size.width, img_mat_size.height, img_mat.step);
+  /* Create GUI image from RGB8 input image data */
+  Glib::RefPtr<Gdk::Pixbuf> gtk_input_image = Gdk::Pixbuf::create_from_data(
+      (const guint8*) image.data, Gdk::COLORSPACE_RGB, false, 8,
+      image_size.width, image_size.height, image.step);
 
-  cv::Size img_mat2_size = img_mat2.size();
+  /* Create GUI image from RGB8 output image data */
+  Glib::RefPtr<Gdk::Pixbuf> gtk_output_image = Gdk::Pixbuf::create_from_data(
+      (const guint8*) output_image.data, Gdk::COLORSPACE_RGB, false, 8,
+      image_size.width, image_size.height, output_image.step);
 
-  Glib::RefPtr<Gdk::Pixbuf> imgBuff2 = Gdk::Pixbuf::create_from_data(
-      (const guint8*) img_mat2.data, Gdk::COLORSPACE_RGB, false, 8,
-      img_mat2_size.width, img_mat2_size.height, img_mat2.step);
-
+  /* Update input image in GUI */
   gtk_image_in_->clear();
-  gtk_image_in_->set(imgBuff);
+  gtk_image_in_->set(gtk_input_image);
 
+  /* Update input image in GUI */
   gtk_image_out_->clear();
-  gtk_image_out_->set(imgBuff2);
+  gtk_image_out_->set(gtk_output_image);
 
+  /* Force update GUI and process events */
   main_window_->resize(1, 1);
   while (gtk_main_.events_pending())
     gtk_main_.iteration();
+
   pthread_mutex_lock(&mutex_);
 }
 
+/**
+ * Process GUI events on most widgets and update class members.
+ */
 void Viewer::ButtonClicked() {
   /* If default button is pressed, reset other filters and itself */
   if (button_default_->get_active()) {
