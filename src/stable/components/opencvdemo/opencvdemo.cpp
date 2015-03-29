@@ -102,3 +102,10 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+
+/*! \mainpage JdeRobot's OpenCV demo
+ *
+ * File opencvdemo.cpp: function main(int argc, char** argv).
+ *
+ * File viewer.cpp: Class opencvdemo.Viewer.
+ */
