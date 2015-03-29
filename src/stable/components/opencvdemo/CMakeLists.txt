@@ -16,14 +16,11 @@ add_executable (opencvdemo ${SOURCE_FILES})
 TARGET_LINK_LIBRARIES(opencvdemo
     ${CMAKE_THREAD_LIBS_INIT} 
     ${OpenCV_LIBRARIES}
-    ${OpenCVGUI_LIBRARIES}
     ${gtkmm_LIBRARIES}
     ${libglademm_LIBRARIES}
     colorspacesmm
     JderobotInterfaces
-    jderobotutil
-#    ${Gearbox_LIBRARIES}
     ${ZeroCIce_LIBRARIES}
-
-
 )
+
+
