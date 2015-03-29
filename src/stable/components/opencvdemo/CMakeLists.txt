@@ -28,7 +28,8 @@ find_package(Doxygen)
 if(DOXYGEN_FOUND)
     set(DOXYGEN_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
     set(DOXYGEN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
-    set(DOXYGEN_OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/doc)
+    set(DOXYGEN_OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/../../../../doc/components/opencvdemo/)
+    file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT})
     configure_file(${DOXYGEN_INPUT} ${DOXYGEN_FILE} @ONLY)
     add_custom_target(doc ${DOXYGEN_EXECUTABLE} ${DOXYGEN_FILE} | grep "Parsing file"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
