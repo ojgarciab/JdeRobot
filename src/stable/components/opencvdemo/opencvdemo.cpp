@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
         }
       }
       /* Get next frame */
-      image_data = camera_proxy->getImageData();
+      image_data = camera_proxy->getImageData(colorspaces::ImageRGB8::FORMAT_RGB8.get()->name);
     } catch (const Ice::Exception& ex) {
       /* Show an error in stderr */
       std::cerr << "ICE error: " << ex << std::endl;

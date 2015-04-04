@@ -4,11 +4,13 @@ cmake_minimum_required(VERSION 2.8)
 
 # ENV VARS
 SET(gladedir ./)
-SET( DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Deps) # Directorio donde se encuentran las dependencias
+SET( DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Deps) # Directory where the dependencies are there
 # Folder with ICE cpp interfaces
 SET( INTERFACES_CPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/stable/interfaces/cpp/jderobot ${CMAKE_CURRENT_SOURCE_DIR}/src/stable/interfaces/cpp/)
 # Folder with ICE python interfaces
 SET( INTERFACES_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/stable/interfaces/python/jderobot ${CMAKE_CURRENT_SOURCE_DIR}/src/stable/interfaces/python/)
+# Folder with ICE java interfaces
+SET( INTERFACES_JAVA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/stable/interfaces/java/jderobot ${CMAKE_CURRENT_SOURCE_DIR}/src/stable/interfaces/java/)
 # Folder JdeRobot libraries 
 SET( LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/stable/libs) 
 # Folder ICE interface definitions
@@ -18,6 +20,7 @@ SET( LIBS_NEEDED  colorspaces jderobotutil progeo pioneer fuzzylib visionlib par
 
 # Create directories if necessary
 file(MAKE_DIRECTORY ${INTERFACES_PYTHON_DIR})
+file(MAKE_DIRECTORY ${INTERFACES_JAVA_DIR})
 
 # MACRO to get the list of subdirectories
 macro(list_subdirectories retval curdir return_relative)
@@ -107,6 +110,9 @@ include(${DEPS_DIR}/qt/CMakeLists.txt)
 include(${DEPS_DIR}/gtk3/CMakeLists.txt)
 include(${DEPS_DIR}/kobuki/CMakeLists.txt)
 include(${DEPS_DIR}/libusb/CMakeLists.txt)
+include(${DEPS_DIR}/zlib/CMakeLists.txt)
+include(${DEPS_DIR}/openssl/CMakeLists.txt)
+include(${DEPS_DIR}/libfreenect2/CMakeLists.txt)
 #include(${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/CMakeLists.txt)
 
 
