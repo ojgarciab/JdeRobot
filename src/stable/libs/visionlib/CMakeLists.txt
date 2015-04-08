@@ -5,7 +5,6 @@ FOREACH (libs ${LIST_LIBS})
 ENDFOREACH()
 
 # Generate documentation if doxygen was found
-# If doxygen is installed we will generate documentation using "make doc"
 if(DOXYGEN_FOUND)
     get_filename_component(DOC_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
     set(DOXYGEN_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
@@ -20,5 +19,4 @@ if(DOXYGEN_FOUND)
     )
     add_dependencies(doc doc_${DOC_NAME})
 endif(DOXYGEN_FOUND)
-
 
