@@ -1,4 +1,4 @@
-PROJECT_NAME     = opencvdemo
+PROJECT_NAME     = @DOC_NAME@
 INPUT            = @CMAKE_CURRENT_SOURCE_DIR@
 FILE_PATTERNS    = *.c *.cpp *.h
 RECURSIVE        = YES
