@@ -7,7 +7,9 @@ ENDFOREACH()
 # Generate documentation if doxygen was found
 if(DOXYGEN_FOUND)
     get_filename_component(DOC_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-    set(DOXYGEN_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    # Uncomment this line if this library/module has its own customized Doxygen.in file
+    #set(DOXYGEN_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    set(DOXYGEN_INPUT ${DOXYGEN_DEFAULT_INPUT})
     set(DOXYGEN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
     set(DOXYGEN_OUTPUT ${DOXYGEN_OUTPUT_BASE}/libs/${DOC_NAME}/)
     file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT})
