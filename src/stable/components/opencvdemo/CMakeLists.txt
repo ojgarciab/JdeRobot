@@ -23,25 +23,18 @@ TARGET_LINK_LIBRARIES(opencvdemo
     ${ZeroCIce_LIBRARIES}
 )
 
-# Find and check dependencies
-SET( DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../Deps) # Directorio donde se encuentran las dependencias
-include(${DEPS_DIR}/ice/CMakeLists.txt)
-include(${DEPS_DIR}/gtk2/CMakeLists.txt)
-include(${DEPS_DIR}/opencv/CMakeLists.txt)
-include(${DEPS_DIR}/doxygen/CMakeLists.txt)
-
-
-# If doxygen is installed we will generate documentation using "make doc"
+# Generate documentation if doxygen was found
 if(DOXYGEN_FOUND)
-    set(DOXYGEN_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    get_filename_component(DOC_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+    set(DOXYGEN_INPUT ${DOXYGEN_DEFAULT_INPUT})
     set(DOXYGEN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
-    set(DOXYGEN_OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/../../../../doc/components/opencvdemo/)
+    set(DOXYGEN_OUTPUT ${DOXYGEN_OUTPUT_BASE}/libs/${DOC_NAME}/)
     file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT})
     configure_file(${DOXYGEN_INPUT} ${DOXYGEN_FILE} @ONLY)
-    add_custom_target(doc ${DOXYGEN_EXECUTABLE} ${DOXYGEN_FILE} | grep "Parsing file"
+    add_custom_target(doc_${DOC_NAME} ${DOXYGEN_EXECUTABLE} ${DOXYGEN_FILE} | grep "Parsing file"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating: component opencvdemo" VERBATIM
-    	DEPENDS ${DOXYGEN_INPUT}
+        COMMENT "Generating: library ${DOC_NAME}" VERBATIM
+        DEPENDS ${DOXYGEN_INPUT}
     )
+    add_dependencies(doc doc_${DOC_NAME})
 endif(DOXYGEN_FOUND)
-
