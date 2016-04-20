@@ -13,7 +13,7 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/. 
+ *  along with this program.  If not, see http://www.gnu.org/licenses/.
  *
  *  Authors : David Lobato Bravo <dav.lobato@gmail.com>
  *
@@ -28,14 +28,28 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "easyiceconfig/EasyIce.h" 
+#include "easyiceconfig/EasyIce.h"
+
+#include <signal.h>
+#include <unistd.h>
+#include <execinfo.h>
+
+void handler(int signal) {
+    void *trazas[20];
+    size_t tam;
+    fprintf(stderr, "Señal capturada: %d\n", signal);
+    tam = backtrace(trazas, 20);
+    backtrace_symbols_fd(trazas, tam, STDERR_FILENO);
+    _exit(1);
+}
 
 int main(int argc, char** argv){
     int status;
-    
+
+    signal(SIGSEGV, handler);   // install our handler
     cameraview::colorTuner viewer;
     Ice::CommunicatorPtr ic;
-    
+
     try{
         ic = EasyIce::initialize(argc,argv);
         Ice::ObjectPrx base = ic->propertyToProxy("Cameraview.Camera.Proxy");
@@ -50,8 +64,8 @@ int main(int argc, char** argv){
         while(viewer.isVisible()){
             jderobot::ImageDataPtr data = cprx->getImageData(colorspaces::ImageRGB8::FORMAT_RGB8.get()->name);
 
-            
-           
+
+
             cv::Mat image = cv::Mat(cv::Size(data->description->width,data->description->height),CV_8UC3,&(data->pixelData[0]));
 
 
